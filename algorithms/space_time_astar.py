@@ -5,7 +5,7 @@ edge constraints supplied by the CBS high-level search. Includes a WAIT action.
 """
 
 import heapq
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Set
 from environment.grid import Grid
 from algorithms.constraints import ConstraintSet
 
@@ -31,13 +31,18 @@ def space_time_astar(
     """
     vertex_c, edge_c = constraints.for_agent(agent)
 
-    # Precompute the latest time any constraint applies to this agent, so we know
-    # when it's safe to stop worrying about future conflicts once at goal.
+    # Build fast O(1) lookup sets ONCE, instead of rebuilding them on every
+    # node expansion inside the search loop (this was the performance bottleneck).
+    blocked_vertices: Set[Tuple[Position, int]] = {(c.position, c.time) for c in vertex_c}
+    blocked_edges: Set[Tuple[Position, Position, int]] = {
+        (c.pos_from, c.pos_to, c.time) for c in edge_c
+    }
+
     max_constraint_time = 0
-    for c in vertex_c:
-        max_constraint_time = max(max_constraint_time, c.time)
-    for c in edge_c:
-        max_constraint_time = max(max_constraint_time, c.time)
+    if blocked_vertices:
+        max_constraint_time = max(max_constraint_time, max(t for _, t in blocked_vertices))
+    if blocked_edges:
+        max_constraint_time = max(max_constraint_time, max(t for _, _, t in blocked_edges))
 
     start_state = (start[0], start[1], 0)
     open_set = []
@@ -69,13 +74,11 @@ def space_time_astar(
         for nx, ny in moves:
             nt = ct + 1
 
-            # Vertex constraint check
-            if (agent, (nx, ny), nt) in {(v.agent, v.position, v.time) for v in vertex_c}:
+            # Vertex constraint check (O(1) now)
+            if ((nx, ny), nt) in blocked_vertices:
                 continue
-            # Edge constraint check (swap conflict)
-            if (agent, (cx, cy), (nx, ny), ct) in {
-                (e.agent, e.pos_from, e.pos_to, e.time) for e in edge_c
-            }:
+            # Edge constraint check (swap conflict, O(1) now)
+            if ((cx, cy), (nx, ny), ct) in blocked_edges:
                 continue
 
             neighbor = (nx, ny, nt)
