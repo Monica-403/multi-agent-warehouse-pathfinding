@@ -1,15 +1,16 @@
 """
 main.py
-Entry point. For now: load a scenario, run CBS, print results.
-PyGame visualization will be wired in during Phase 3.
+Entry point. Loads a scenario, runs CBS, prints metrics, and launches the
+PyGame visualization of the collision-free paths.
 """
 
 import sys
 from environment.warehouse import load_scenario
 from algorithms.cbs import cbs_search
+from simulation.animation import run_simulation
 
 
-def main(scenario_path: str = "scenarios/simple.json"):
+def main(scenario_path: str = "scenarios/simple.json", visualize: bool = True):
     grid, robots = load_scenario(scenario_path)
 
     print(f"Loaded scenario: {scenario_path}")
@@ -23,7 +24,7 @@ def main(scenario_path: str = "scenarios/simple.json"):
         print("FAILED: no collision-free solution found.")
         return
 
-    print(f"SUCCESS: collision-free solution found.")
+    print("SUCCESS: collision-free solution found.")
     print(f"Planning time: {result.planning_time:.4f}s")
     print(f"Nodes expanded: {result.nodes_expanded}")
     print(f"Conflicts detected/resolved: {result.conflicts_detected}")
@@ -43,6 +44,11 @@ def main(scenario_path: str = "scenarios/simple.json"):
     print("-" * 40)
     print(f"Total Path Cost: {total_cost}")
     print(f"Makespan: {makespan}")
+
+    if visualize:
+        print("-" * 40)
+        print("Launching PyGame visualizer... (close window or press Q/ESC to quit)")
+        run_simulation(grid, robots, result)
 
 
 if __name__ == "__main__":
