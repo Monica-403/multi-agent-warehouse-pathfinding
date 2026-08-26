@@ -22,13 +22,13 @@ def main(scenario_path: str = "scenarios/simple.json", visualize: bool = True):
 
     if not result.success:
         print("FAILED: no collision-free solution found.")
+        print(f"Conflicts encountered: {result.conflicts_detected}")
+        print(f"Nodes expanded: {result.nodes_expanded}")
+        print(f"Search time: {result.planning_time:.4f}s")
+        if visualize:
+            print("Opening visualizer to show failure state...")
+            run_simulation(grid, robots, result)
         return
-
-    print("SUCCESS: collision-free solution found.")
-    print(f"Planning time: {result.planning_time:.4f}s")
-    print(f"Nodes expanded: {result.nodes_expanded}")
-    print(f"Conflicts detected/resolved: {result.conflicts_detected}")
-    print("-" * 40)
 
     total_cost = 0
     makespan = 0
