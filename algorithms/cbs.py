@@ -7,8 +7,8 @@ resolving vertex/edge conflicts by branching and replanning affected robots.
 import heapq
 import itertools
 import time as time_module
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 from environment.grid import Grid
 from environment.robot import Robot
@@ -38,6 +38,7 @@ class CBSResult:
     conflicts_detected: int
     conflicts_resolved: int
     nodes_expanded: int
+    timed_out: bool = False
 
 
 def cbs_search(
@@ -45,12 +46,18 @@ def cbs_search(
     robots: List[Robot],
     max_time: int = 200,
     node_limit: int = 50000,
+    time_limit_seconds: float = 30.0,
 ) -> CBSResult:
+    """
+    time_limit_seconds: wall-clock cap on the whole search, independent of
+    node_limit. Whichever limit is hit first stops the search and returns
+    success=False, timed_out=True (if it was the time cap that triggered it).
+    This keeps large instances (e.g. 30 robots) from running indefinitely.
+    """
     start_time = time_module.time()
     conflicts_detected = 0
     nodes_expanded = 0
 
-    # --- Root node: plan every robot independently, ignoring other robots ---
     root_constraints = ConstraintSet()
     root_paths = {}
     for robot in robots:
@@ -67,6 +74,11 @@ def cbs_search(
     heapq.heappush(open_list, (root.cost, next(counter), root))
 
     while open_list:
+        elapsed = time_module.time() - start_time
+        if elapsed > time_limit_seconds:
+            return CBSResult(False, {}, elapsed, conflicts_detected,
+                              conflicts_detected, nodes_expanded, timed_out=True)
+
         nodes_expanded += 1
         if nodes_expanded > node_limit:
             return CBSResult(False, {}, time_module.time() - start_time,
@@ -77,7 +89,6 @@ def cbs_search(
         conflict = find_first_conflict(node.paths)
 
         if conflict is None:
-            # No conflicts left -> valid, collision-free solution
             return CBSResult(
                 True, node.paths, time_module.time() - start_time,
                 conflicts_detected, conflicts_detected, nodes_expanded,
@@ -85,16 +96,15 @@ def cbs_search(
 
         conflicts_detected += 1
 
-        # Branch into two children: constrain agent_a, and constrain agent_b
         for agent in (conflict.agent_a, conflict.agent_b):
             child_constraints = node.constraints.copy()
 
             if conflict.type == "vertex":
-                pos = conflict.position_a  # same as position_b for vertex conflicts
+                pos = conflict.position_a
                 child_constraints.add_vertex_constraint(
                     VertexConstraint(agent, pos, conflict.time)
                 )
-            else:  # edge conflict
+            else:
                 if agent == conflict.agent_a:
                     pos_from, pos_to = conflict.position_a, conflict.position_b
                 else:
@@ -103,14 +113,13 @@ def cbs_search(
                     EdgeConstraint(agent, pos_from, pos_to, conflict.time)
                 )
 
-            # Replan only the affected robot
             robot_obj = next(r for r in robots if r.id == agent)
             new_path = space_time_astar(
                 grid, agent, robot_obj.start, robot_obj.goal, child_constraints, max_time
             )
 
             if new_path is None:
-                continue  # this branch is infeasible, discard
+                continue
 
             child_paths = dict(node.paths)
             child_paths[agent] = new_path
