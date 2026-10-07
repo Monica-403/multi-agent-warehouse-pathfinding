@@ -2,6 +2,7 @@ import pygame
 import sys
 import json
 import os
+import subprocess
 
 
 # ============================================================
@@ -37,6 +38,7 @@ PANEL_COLOR = (220, 220, 220)
 
 BUTTON_COLOR = (200, 200, 200)
 BUTTON_ACTIVE_COLOR = (100, 160, 230)
+RUN_BUTTON_COLOR = (80, 180, 100)
 
 TEXT_COLOR = (20, 20, 20)
 
@@ -241,22 +243,25 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
     # --------------------------------------------------------
 
     buttons = [
-        ("1  OBSTACLE", "obstacle"),
-        ("2  ROBOT", "robot"),
-        ("3  GOAL", "goal"),
-        ("4  ERASE", "erase"),
-        ("S  SAVE", "save"),
+        ("1 OBSTACLE", "obstacle"),
+        ("2 ROBOT", "robot"),
+        ("3 GOAL", "goal"),
+        ("4 ERASE", "erase"),
+        ("S SAVE", "save"),
+        ("R RUN CBS", "run"),
     ]
 
-    button_x = 10
+    button_x = 8
     button_y = panel_y + 10
 
-    button_width = 105
+    # Six buttons must fit inside the 660px-wide window.
+    button_width = 100
     button_height = 35
+    button_gap = 8
 
     font_button = pygame.font.SysFont(
         "arial",
-        14,
+        13,
         bold=True
     )
 
@@ -269,8 +274,12 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
             button_height
         )
 
-        # Highlight current mode
-        if mode == current_mode:
+        # RUN CBS gets its own color
+        if mode == "run":
+
+            color = RUN_BUTTON_COLOR
+
+        elif mode == current_mode:
 
             color = BUTTON_ACTIVE_COLOR
 
@@ -308,7 +317,7 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
             text_rect
         )
 
-        button_x += 112
+        button_x += button_width + button_gap
 
     # --------------------------------------------------------
     # Information
@@ -344,8 +353,9 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
     # --------------------------------------------------------
 
     instruction_text = (
-        "1-4: Change mode    "
-        "S: Save Scenario    "
+        "1-4: Mode    "
+        "S: Save    "
+        "R: Run CBS    "
         "C: Clear    "
         "Q / ESC: Quit"
     )
@@ -374,7 +384,7 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
     if missing_goals:
 
         warning_text = (
-            "⚠ Robot(s) without goals: "
+            "Robot(s) without goals: "
             + ", ".join(
                 str(robot_id)
                 for robot_id in missing_goals
@@ -394,7 +404,9 @@ def draw_grid(screen, obstacles, robots, goals, current_mode):
 
     else:
 
-        ready_text = "✓ All robots have goals - ready to save"
+        ready_text = (
+            "All robots have goals - ready to run CBS"
+        )
 
         text = font_info.render(
             ready_text,
@@ -465,8 +477,6 @@ def save_dynamic_scenario(obstacles, robots, goals):
 
     # --------------------------------------------------------
     # Create grid
-    #
-    # IMPORTANT:
     #
     # Editor uses:
     #     (row, col)
@@ -603,6 +613,73 @@ def save_dynamic_scenario(obstacles, robots, goals):
 
 
 # ============================================================
+# RUN CBS
+# ============================================================
+
+def run_cbs(obstacles, robots, goals):
+
+    print()
+    print("=" * 45)
+    print("RUN CBS REQUESTED")
+    print("=" * 45)
+
+    # --------------------------------------------------------
+    # First save the current scenario
+    # --------------------------------------------------------
+
+    saved = save_dynamic_scenario(
+        obstacles,
+        robots,
+        goals
+    )
+
+    # If saving failed, don't run CBS
+    if not saved:
+
+        print("CBS was not started.")
+        print("=" * 45)
+
+        return
+
+    # --------------------------------------------------------
+    # Run the existing main.py
+    #
+    # We pass dynamic.json explicitly so main.py uses
+    # the custom scenario instead of simple.json.
+    # --------------------------------------------------------
+
+    scenario_path = os.path.join(
+        "scenarios",
+        "dynamic.json"
+    )
+
+    try:
+
+        print("Starting CBS...")
+        print(
+            f"Scenario: {scenario_path}"
+        )
+        print()
+
+        subprocess.Popen(
+            [
+                sys.executable,
+                "main.py",
+                scenario_path
+            ]
+        )
+
+    except Exception as error:
+
+        print()
+        print("=" * 45)
+        print("FAILED TO START CBS")
+        print("=" * 45)
+        print(error)
+        print("=" * 45)
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -669,24 +746,44 @@ def main():
 
                 if mouse_y >= GRID_HEIGHT:
 
-                    # SAVE button
-                    #
                     # Button positions:
                     #
-                    # 1 = x 10 - 115
-                    # 2 = x 122 - 227
-                    # 3 = x 234 - 339
-                    # 4 = x 346 - 451
-                    # 5 = x 458 - 563
+                    # 1 = x 8 - 108
+                    # 2 = x 116 - 216
+                    # 3 = x 224 - 324
+                    # 4 = x 332 - 432
+                    # 5 = x 440 - 540
+                    # 6 = x 548 - 648
+
+                    # -----------------------------------------
+                    # SAVE button
+                    # -----------------------------------------
 
                     if (
-                        458 <= mouse_x <= 563
+                        440 <= mouse_x <= 540
                         and GRID_HEIGHT + 10
                         <= mouse_y
                         <= GRID_HEIGHT + 45
                     ):
 
                         save_dynamic_scenario(
+                            obstacles,
+                            robots,
+                            goals
+                        )
+
+                    # -----------------------------------------
+                    # RUN CBS button
+                    # -----------------------------------------
+
+                    elif (
+                        548 <= mouse_x <= 648
+                        and GRID_HEIGHT + 10
+                        <= mouse_y
+                        <= GRID_HEIGHT + 45
+                    ):
+
+                        run_cbs(
                             obstacles,
                             robots,
                             goals
@@ -844,7 +941,10 @@ def main():
 
                             robot_to_delete = None
 
-                            for robot_id, robot_position in robots.items():
+                            for (
+                                robot_id,
+                                robot_position
+                            ) in robots.items():
 
                                 if robot_position == position:
 
@@ -910,6 +1010,18 @@ def main():
                 elif event.key == pygame.K_s:
 
                     save_dynamic_scenario(
+                        obstacles,
+                        robots,
+                        goals
+                    )
+
+                # ---------------------------------------------
+                # RUN CBS
+                # ---------------------------------------------
+
+                elif event.key == pygame.K_r:
+
+                    run_cbs(
                         obstacles,
                         robots,
                         goals
