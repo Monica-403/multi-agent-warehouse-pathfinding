@@ -14,7 +14,7 @@ from simulation.animation import run_simulation
 
 
 def main(
-    scenario_path: str = "scenarios/dynamic.json",
+    scenario_path: str = "scenarios/simple.json",
     visualize: bool = True
 ):
 
@@ -47,14 +47,17 @@ def main(
     if not result.success:
 
         print("FAILED: no collision-free solution found.")
+
         print(
             f"Conflicts encountered: "
             f"{result.conflicts_detected}"
         )
+
         print(
             f"Nodes expanded: "
             f"{result.nodes_expanded}"
         )
+
         print(
             f"Search time: "
             f"{result.planning_time:.4f}s"
@@ -108,7 +111,7 @@ def main(
         )
 
     # =========================================================
-    # 5. PRINT FINAL RESULTS
+    # 5. PRINT RESULTS
     # =========================================================
 
     print("-" * 40)
@@ -163,19 +166,17 @@ def main(
 if __name__ == "__main__":
 
     # ---------------------------------------------------------
-    # If a scenario is provided in the command line, use it.
+    # Default = predefined scenario
     #
-    # Example:
+    # To run a custom scenario:
     #
-    # python main.py scenarios/simple.json
-    #
-    # Otherwise use dynamic.json.
+    # python main.py scenarios/dynamic.json
     # ---------------------------------------------------------
 
     path = (
         sys.argv[1]
         if len(sys.argv) > 1
-        else "scenarios/dynamic.json"
+        else "scenarios/simple.json"
     )
 
     main(path)
