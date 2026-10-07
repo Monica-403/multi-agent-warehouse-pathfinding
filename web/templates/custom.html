@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+
+        {% if edit_mode %}
+            Modify Saved Scenario
+        {% else %}
+            Create Custom Scenario
+        {% endif %}
+
+    </title>
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- =========================================
+         HEADER
+         ========================================= -->
+
+    <header>
+
+        <div class="icon">
+
+            {% if edit_mode %}
+                ✏️
+            {% else %}
+                🛠️
+            {% endif %}
+
+        </div>
+
+
+        <h1>
+
+            {% if edit_mode %}
+
+                Modify Saved Scenario
+
+            {% else %}
+
+                Create Custom Scenario
+
+            {% endif %}
+
+        </h1>
+
+
+        <p>
+
+            {% if edit_mode %}
+
+                Modify your existing warehouse
+
+            {% else %}
+
+                Build your own warehouse
+
+            {% endif %}
+
+        </p>
+
+    </header>
+
+
+    <!-- =========================================
+         EDITOR
+         ========================================= -->
+
+    <div class="custom-editor">
+
+
+        <h2>
+            🏭 Warehouse Builder
+        </h2>
+
+
+        <p class="section-description">
+
+            Select a mode and click cells to
+            customize your warehouse.
+
+        </p>
+
+
+        <!-- =====================================
+             TOOLS
+             ===================================== -->
+
+        <div class="editor-tools">
+
+
+            <button
+                id="obstacle-mode"
+                class="tool-button active-tool"
+            >
+
+                ⬛ Obstacle
+
+            </button>
+
+
+            <button
+                id="robot-mode"
+                class="tool-button"
+            >
+
+                🤖 Robot
+
+            </button>
+
+
+            <button
+                id="goal-mode"
+                class="tool-button"
+            >
+
+                🎯 Goal
+
+            </button>
+
+
+            <button
+                id="erase-mode"
+                class="tool-button"
+            >
+
+                🧹 Erase
+
+            </button>
+
+        </div>
+
+
+        <!-- =====================================
+             GRID
+             ===================================== -->
+
+        <div
+            id="custom-grid"
+            class="custom-grid"
+        >
+
+        </div>
+
+
+        <!-- =====================================
+             INFORMATION
+             ===================================== -->
+
+        <div class="editor-info">
+
+
+            <div>
+
+                <strong>
+                    Current Mode:
+                </strong>
+
+                <span id="current-mode">
+                    Obstacle
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    Robots:
+                </strong>
+
+                <span id="robot-count">
+                    0
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    Goals:
+                </strong>
+
+                <span id="goal-count">
+                    0
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    Obstacles:
+                </strong>
+
+                <span id="obstacle-count">
+                    0
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =====================================
+             ACTIONS
+             ===================================== -->
+
+        <div class="editor-actions">
+
+
+            <button
+                id="clear-button"
+                class="clear-button"
+            >
+
+                🗑️ Clear
+
+            </button>
+
+
+            <button
+                id="save-button"
+                class="save-button"
+            >
+
+                💾 Save Scenario
+
+            </button>
+
+
+            <button
+                id="save-run-button"
+                class="run-button"
+            >
+
+                ▶ Save & Run CBS
+
+            </button>
+
+
+        </div>
+
+
+        <!-- =====================================
+             MESSAGE
+             ===================================== -->
+
+        <div
+            id="editor-message"
+            class="editor-message"
+        >
+
+        </div>
+
+
+        <!-- =====================================
+             BACK
+             ===================================== -->
+
+        <div class="back-button">
+
+            <a
+                href="/"
+                class="secondary-button"
+            >
+
+                ← Back to Home
+
+            </a>
+
+        </div>
+
+
+    </div>
+
+
+    <footer>
+
+        <p>
+
+            Multi-Agent Warehouse
+            Pathfinding System
+
+        </p>
+
+    </footer>
+
+
+</div>
+
+
+<!-- =========================================
+     JAVASCRIPT
+     ========================================= -->
+
+<script>
+
+
+    const GRID_SIZE = 12;
+
+
+    let currentMode =
+        "obstacle";
+
+
+    /*
+     * Grid cell data.
+     */
+
+    const cells = {};
+
+
+    /*
+     * Robot data.
+     */
+
+    const robots = {};
+
+
+    /*
+     * Are we editing an existing
+     * saved scenario?
+     */
+
+    const editMode =
+        {{ edit_mode | default(false) | tojson }};
+
+
+    /*
+     * Existing dynamic.json data.
+     */
+
+    const savedScenario =
+        {{ saved_scenario | default(none) | tojson }};
+
+
+    // =========================================
+    // CREATE GRID
+    // =========================================
+
+    function createGrid() {
+
+        const grid =
+            document.getElementById(
+                "custom-grid"
+            );
+
+
+        grid.innerHTML = "";
+
+
+        for (
+            let y = 0;
+            y < GRID_SIZE;
+            y++
+        ) {
+
+
+            for (
+                let x = 0;
+                x < GRID_SIZE;
+                x++
+            ) {
+
+
+                const cell =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                cell.className =
+                    "custom-cell free";
+
+
+                cell.dataset.x =
+                    x;
+
+
+                cell.dataset.y =
+                    y;
+
+
+                cell.addEventListener(
+                    "click",
+                    () =>
+                        handleCellClick(
+                            x,
+                            y,
+                            cell
+                        )
+                );
+
+
+                grid.appendChild(
+                    cell
+                );
+
+            }
+
+        }
+
+    }
+
+
+    // =========================================
+    // LOAD SAVED SCENARIO
+    // =========================================
+
+    function loadSavedScenario() {
+
+
+        if (
+            !editMode ||
+            !savedScenario
+        ) {
+
+            return;
+
+        }
+
+
+        const savedGrid =
+            savedScenario.grid;
+
+
+        /*
+         * Load obstacles.
+         */
+
+        for (
+            let y = 0;
+            y < savedGrid.length;
+            y++
+        ) {
+
+
+            for (
+                let x = 0;
+                x < savedGrid[y].length;
+                x++
+            ) {
+
+
+                if (
+                    savedGrid[y][x] === 1
+                ) {
+
+                    cells[
+                        `${x},${y}`
+                    ] = "obstacle";
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * Load robots and goals.
+         */
+
+        savedScenario.robots.forEach(
+            robot => {
+
+
+                robots[
+                    robot.id
+                ] = {
+
+
+                    start: {
+
+                        x:
+                            robot.start[0],
+
+                        y:
+                            robot.start[1]
+
+                    },
+
+
+                    goal: {
+
+                        x:
+                            robot.goal[0],
+
+                        y:
+                            robot.goal[1]
+
+                    }
+
+                };
+
+
+                cells[
+                    `${robot.start[0]},${robot.start[1]}`
+                ] = "robot";
+
+
+                cells[
+                    `${robot.goal[0]},${robot.goal[1]}`
+                ] = "goal";
+
+
+            }
+        );
+
+    }
+
+
+    // =========================================
+    // NEXT ROBOT ID
+    // =========================================
+
+    function getNextRobotId() {
+
+        const ids =
+            Object.keys(
+                robots
+            ).map(
+                Number
+            );
+
+
+        if (
+            ids.length === 0
+        ) {
+
+            return 1;
+
+        }
+
+
+        return Math.max(
+            ...ids
+        ) + 1;
+
+    }
+
+
+    // =========================================
+    // FIND ROBOT AT POSITION
+    // =========================================
+
+    function findRobotAt(
+        x,
+        y
+    ) {
+
+
+        for (
+            const id in robots
+        ) {
+
+
+            const robot =
+                robots[id];
+
+
+            if (
+                robot.start.x === x &&
+                robot.start.y === y
+            ) {
+
+                return {
+
+                    id:
+                        Number(id),
+
+                    type:
+                        "start"
+
+                };
+
+            }
+
+
+            if (
+                robot.goal &&
+                robot.goal.x === x &&
+                robot.goal.y === y
+            ) {
+
+                return {
+
+                    id:
+                        Number(id),
+
+                    type:
+                        "goal"
+
+                };
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    // =========================================
+    // FIND ROBOT WITHOUT GOAL
+    // =========================================
+
+    function findRobotWithoutGoal() {
+
+
+        for (
+            const id in robots
+        ) {
+
+
+            if (
+                !robots[id].goal
+            ) {
+
+                return Number(id);
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    // =========================================
+    // CELL CLICK
+    // =========================================
+
+    function handleCellClick(
+        x,
+        y,
+        cell
+    ) {
+
+
+        const key =
+            `${x},${y}`;
+
+
+        // =====================================
+        // OBSTACLE
+        // =====================================
+
+        if (
+            currentMode === "obstacle"
+        ) {
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                cells[key] =
+                    "free";
+
+            }
+
+            else {
+
+                cells[key] =
+                    "obstacle";
+
+            }
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+        // =====================================
+        // ROBOT
+        // =====================================
+
+        if (
+            currentMode === "robot"
+        ) {
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const robotId =
+                getNextRobotId();
+
+
+            robots[robotId] = {
+
+
+                start: {
+
+                    x:
+                        x,
+
+                    y:
+                        y
+
+                },
+
+
+                goal:
+                    null
+
+            };
+
+
+            cells[key] =
+                "robot";
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+        // =====================================
+        // GOAL
+        // =====================================
+
+        if (
+            currentMode === "goal"
+        ) {
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const robotId =
+                findRobotWithoutGoal();
+
+
+            if (
+                robotId === null
+            ) {
+
+
+                showMessage(
+                    "Add a robot before adding a goal.",
+                    "error"
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+             * Prevent duplicate goals.
+             */
+
+            for (
+                const id in robots
+            ) {
+
+
+                if (
+                    robots[id].goal &&
+                    robots[id].goal.x === x &&
+                    robots[id].goal.y === y
+                ) {
+
+                    return;
+
+                }
+
+            }
+
+
+            robots[
+                robotId
+            ].goal = {
+
+                x:
+                    x,
+
+                y:
+                    y
+
+            };
+
+
+            cells[key] =
+                "goal";
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+        // =====================================
+        // ERASE
+        // =====================================
+
+        if (
+            currentMode === "erase"
+        ) {
+
+
+            const robotInfo =
+                findRobotAt(
+                    x,
+                    y
+                );
+
+
+            if (
+                robotInfo
+            ) {
+
+
+                const id =
+                    robotInfo.id;
+
+
+                /*
+                 * Remove its goal.
+                 */
+
+                if (
+                    robots[id].goal
+                ) {
+
+
+                    const goal =
+                        robots[id].goal;
+
+
+                    const goalKey =
+                        `${goal.x},${goal.y}`;
+
+
+                    delete cells[
+                        goalKey
+                    ];
+
+                }
+
+
+                delete robots[
+                    id
+                ];
+
+            }
+
+
+            delete cells[
+                key
+            ];
+
+
+            renderGrid();
+
+            updateStats();
+
+        }
+
+    }
+
+
+    // =========================================
+    // RENDER GRID
+    // =========================================
+
+    function renderGrid() {
+
+
+        const grid =
+            document.getElementById(
+                "custom-grid"
+            );
+
+
+        const gridCells =
+            grid.children;
+
+
+        for (
+            let i = 0;
+            i < gridCells.length;
+            i++
+        ) {
+
+
+            const cell =
+                gridCells[i];
+
+
+            const x =
+                Number(
+                    cell.dataset.x
+                );
+
+
+            const y =
+                Number(
+                    cell.dataset.y
+                );
+
+
+            const key =
+                `${x},${y}`;
+
+
+            cell.className =
+                "custom-cell";
+
+
+            cell.innerHTML =
+                "";
+
+
+            // Free
+
+            if (
+                !cells[key]
+            ) {
+
+                cell.classList.add(
+                    "free"
+                );
+
+                continue;
+
+            }
+
+
+            // Obstacle
+
+            if (
+                cells[key] ===
+                "obstacle"
+            ) {
+
+
+                cell.classList.add(
+                    "obstacle"
+                );
+
+
+                cell.innerHTML =
+                    "<span>⬛</span>";
+
+
+                continue;
+
+            }
+
+
+            // Robot
+
+            if (
+                cells[key] ===
+                "robot"
+            ) {
+
+
+                cell.classList.add(
+                    "robot"
+                );
+
+
+                const robot =
+                    findRobotAt(
+                        x,
+                        y
+                    );
+
+
+                cell.innerHTML = `
+
+                    <span>
+                        🤖
+                    </span>
+
+                    <small>
+                        R${robot.id}
+                    </small>
+
+                `;
+
+
+                continue;
+
+            }
+
+
+            // Goal
+
+            if (
+                cells[key] ===
+                "goal"
+            ) {
+
+
+                cell.classList.add(
+                    "goal"
+                );
+
+
+                let goalRobotId =
+                    null;
+
+
+                for (
+                    const id in robots
+                ) {
+
+
+                    if (
+                        robots[id].goal &&
+                        robots[id].goal.x === x &&
+                        robots[id].goal.y === y
+                    ) {
+
+                        goalRobotId =
+                            id;
+
+                        break;
+
+                    }
+
+                }
+
+
+                cell.innerHTML = `
+
+                    <span>
+                        🎯
+                    </span>
+
+                    <small>
+                        G${goalRobotId}
+                    </small>
+
+                `;
+
+            }
+
+        }
+
+    }
+
+
+    // =========================================
+    // CHANGE MODE
+    // =========================================
+
+    function setMode(
+        mode
+    ) {
+
+
+        currentMode =
+            mode;
+
+
+        document
+            .querySelectorAll(
+                ".tool-button"
+            )
+            .forEach(
+                button =>
+                    button.classList.remove(
+                        "active-tool"
+                    )
+            );
+
+
+        document
+            .getElementById(
+                `${mode}-mode`
+            )
+            .classList.add(
+                "active-tool"
+            );
+
+
+        const names = {
+
+            obstacle:
+                "Obstacle",
+
+            robot:
+                "Robot",
+
+            goal:
+                "Goal",
+
+            erase:
+                "Erase"
+
+        };
+
+
+        document.getElementById(
+            "current-mode"
+        ).textContent =
+            names[mode];
+
+    }
+
+
+    // =========================================
+    // UPDATE STATISTICS
+    // =========================================
+
+    function updateStats() {
+
+
+        const obstacleCount =
+            Object.values(
+                cells
+            ).filter(
+                value =>
+                    value ===
+                    "obstacle"
+            ).length;
+
+
+        const robotCount =
+            Object.keys(
+                robots
+            ).length;
+
+
+        const goalCount =
+            Object.values(
+                robots
+            ).filter(
+                robot =>
+                    robot.goal !== null
+            ).length;
+
+
+        document.getElementById(
+            "robot-count"
+        ).textContent =
+            robotCount;
+
+
+        document.getElementById(
+            "goal-count"
+        ).textContent =
+            goalCount;
+
+
+        document.getElementById(
+            "obstacle-count"
+        ).textContent =
+            obstacleCount;
+
+    }
+
+
+    // =========================================
+    // CREATE SCENARIO DATA
+    // =========================================
+
+    function createScenarioData() {
+
+
+        const grid = [];
+
+
+        for (
+            let y = 0;
+            y < GRID_SIZE;
+            y++
+        ) {
+
+
+            const row = [];
+
+
+            for (
+                let x = 0;
+                x < GRID_SIZE;
+                x++
+            ) {
+
+
+                const key =
+                    `${x},${y}`;
+
+
+                row.push(
+
+                    cells[key] ===
+                    "obstacle"
+
+                        ? 1
+
+                        : 0
+
+                );
+
+            }
+
+
+            grid.push(
+                row
+            );
+
+        }
+
+
+        const robotData =
+            Object.entries(
+                robots
+            ).map(
+                ([id, robot]) => ({
+
+
+                    id:
+                        Number(id),
+
+
+                    start: [
+
+                        robot.start.x,
+
+                        robot.start.y
+
+                    ],
+
+
+                    goal: [
+
+                        robot.goal.x,
+
+                        robot.goal.y
+
+                    ]
+
+
+                })
+            );
+
+
+        return {
+
+            grid:
+                grid,
+
+            robots:
+                robotData
+
+        };
+
+    }
+
+
+    // =========================================
+    // SAVE SCENARIO
+    // =========================================
+
+    async function saveScenario() {
+
+
+        const incompleteRobot =
+            Object.entries(
+                robots
+            ).find(
+                ([id, robot]) =>
+                    robot.goal === null
+            );
+
+
+        if (
+            incompleteRobot
+        ) {
+
+
+            showMessage(
+
+                `Robot ${incompleteRobot[0]} needs a goal.`,
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+
+        if (
+            Object.keys(
+                robots
+            ).length === 0
+        ) {
+
+
+            showMessage(
+
+                "Add at least one robot.",
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+
+        const scenario =
+            createScenarioData();
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/custom/save",
+                    {
+
+                        method:
+                            "POST",
+
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+
+                        body:
+                            JSON.stringify(
+                                scenario
+                            )
+
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (
+                result.success
+            ) {
+
+
+                showMessage(
+
+                    "✓ Scenario saved to dynamic.json",
+
+                    "success"
+
+                );
+
+
+                return true;
+
+            }
+
+
+            showMessage(
+
+                result.message,
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+        catch (
+            error
+        ) {
+
+
+            showMessage(
+
+                "Could not connect to the server.",
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+    // =========================================
+    // SAVE & RUN
+    // =========================================
+
+    async function saveAndRun() {
+
+
+        const saved =
+            await saveScenario();
+
+
+        if (
+            saved
+        ) {
+
+
+            window.location.href =
+                "/saved";
+
+        }
+
+    }
+
+
+    // =========================================
+    // CLEAR
+    // =========================================
+
+    function clearEditor() {
+
+
+        if (
+            !confirm(
+                "Clear the entire warehouse?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        for (
+            const key in cells
+        ) {
+
+            delete cells[
+                key
+            ];
+
+        }
+
+
+        for (
+            const id in robots
+        ) {
+
+            delete robots[
+                id
+            ];
+
+        }
+
+
+        renderGrid();
+
+        updateStats();
+
+
+        showMessage(
+
+            "Warehouse cleared.",
+
+            "success"
+
+        );
+
+    }
+
+
+    // =========================================
+    // MESSAGE
+    // =========================================
+
+    function showMessage(
+        message,
+        type
+    ) {
+
+
+        const element =
+            document.getElementById(
+                "editor-message"
+            );
+
+
+        element.textContent =
+            message;
+
+
+        element.className =
+            "editor-message " +
+            type;
+
+    }
+
+
+    // =========================================
+    // BUTTON EVENTS
+    // =========================================
+
+    document
+        .getElementById(
+            "obstacle-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "obstacle"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "robot-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "robot"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "goal-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "goal"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "erase-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "erase"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "clear-button"
+        )
+        .addEventListener(
+            "click",
+            clearEditor
+        );
+
+
+    document
+        .getElementById(
+            "save-button"
+        )
+        .addEventListener(
+            "click",
+            saveScenario
+        );
+
+
+    document
+        .getElementById(
+            "save-run-button"
+        )
+        .addEventListener(
+            "click",
+            saveAndRun
+        );
+
+
+    // =========================================
+    // INITIALIZE
+    // =========================================
+
+    createGrid();
+
+    loadSavedScenario();
+
+    renderGrid();
+
+    updateStats();
+
+</script>
+
+
+</body>
+
+</html>

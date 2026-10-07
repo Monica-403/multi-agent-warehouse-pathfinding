@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Saved Scenario</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- =========================================
+         HEADER
+         ========================================= -->
+
+    <header>
+
+        <div class="icon">
+            💾
+        </div>
+
+        <h1>
+            My Saved Scenario
+        </h1>
+
+        <p>
+            Your customized warehouse
+        </p>
+
+    </header>
+
+
+    {% if scenario_exists %}
+
+
+        {% if success %}
+
+
+        <!-- =====================================
+             WAREHOUSE
+             ===================================== -->
+
+        <div class="warehouse-section">
+
+            <h2>
+                🏭 Saved Warehouse
+            </h2>
+
+            <p class="section-description">
+
+                CBS-generated collision-free paths
+
+            </p>
+
+
+            <div
+                id="warehouse-grid"
+                class="warehouse-grid"
+                style="
+                    grid-template-columns:
+                    repeat({{ grid.width }}, 48px);
+
+                    grid-template-rows:
+                    repeat({{ grid.height }}, 48px);
+                "
+            >
+
+                {% for y in range(grid.height) %}
+
+                    {% for x in range(grid.width) %}
+
+                        {% set key =
+                            x|string + "," + y|string
+                        %}
+
+
+                        <div
+                            class="
+                                warehouse-cell
+
+                                {% if key in cells
+                                   and cells[key].type == 'obstacle' %}
+
+                                    obstacle
+
+                                {% elif key in cells
+                                   and cells[key].type == 'goal' %}
+
+                                    goal
+
+                                {% else %}
+
+                                    free
+
+                                {% endif %}
+                            "
+
+                            data-x="{{ x }}"
+                            data-y="{{ y }}"
+                        >
+
+                            {% if key in cells
+                               and cells[key].type == 'obstacle' %}
+
+                                <span>
+                                    ⬛
+                                </span>
+
+
+                            {% elif key in cells
+                               and cells[key].type == 'goal' %}
+
+                                <span class="goal-icon">
+                                    🎯
+                                </span>
+
+                                <span class="cell-label">
+                                    G{{ cells[key].id }}
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =================================
+                 LEGEND
+                 ================================= -->
+
+            <div class="legend">
+
+                <div class="legend-item">
+
+                    <span class="legend-box robot-box">
+                        🤖
+                    </span>
+
+                    Robot
+
+                </div>
+
+
+                <div class="legend-item">
+
+                    <span class="legend-box goal-box">
+                        🎯
+                    </span>
+
+                    Goal
+
+                </div>
+
+
+                <div class="legend-item">
+
+                    <span class="legend-box obstacle-box">
+                        ⬛
+                    </span>
+
+                    Obstacle
+
+                </div>
+
+
+                <div class="legend-item">
+
+                    <span class="legend-box free-box">
+                    </span>
+
+                    Free
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================
+                 ANIMATION CONTROLS
+                 ================================= -->
+
+            <div class="animation-controls">
+
+                <button
+                    id="play-button"
+                    class="animation-button play-button">
+
+                    ▶ Play
+
+                </button>
+
+
+                <button
+                    id="pause-button"
+                    class="animation-button pause-button">
+
+                    ⏸ Pause
+
+                </button>
+
+
+                <button
+                    id="restart-button"
+                    class="animation-button restart-button">
+
+                    ↻ Restart
+
+                </button>
+
+            </div>
+
+
+            <div class="time-display">
+
+                Time:
+
+                <strong id="current-time">
+                    0
+                </strong>
+
+                /
+
+                <strong id="max-time">
+                    {{ makespan }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             CBS RESULTS
+             ===================================== -->
+
+        <div class="card results-card">
+
+            <h2>
+                ✅ CBS Solution Found
+            </h2>
+
+            <p>
+
+                Your saved warehouse scenario was
+                successfully solved without collisions.
+
+            </p>
+
+
+            <!-- Metrics -->
+
+            <div class="metrics">
+
+                <div class="metric">
+
+                    <strong>
+                        Total Path Cost
+                    </strong>
+
+                    <span>
+                        {{ total_cost }}
+                    </span>
+
+                </div>
+
+
+                <div class="metric">
+
+                    <strong>
+                        Makespan
+                    </strong>
+
+                    <span>
+                        {{ makespan }}
+                    </span>
+
+                </div>
+
+
+                <div class="metric">
+
+                    <strong>
+                        Conflicts
+                    </strong>
+
+                    <span>
+                        {{ conflicts }}
+                    </span>
+
+                </div>
+
+
+                <div class="metric">
+
+                    <strong>
+                        Nodes Expanded
+                    </strong>
+
+                    <span>
+                        {{ nodes }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================
+                 SAVED SCENARIO ACTIONS
+                 ================================= -->
+
+            <div class="saved-actions">
+
+                <a
+                    href="/custom/edit"
+                    class="modify-button"
+                >
+
+                    ✏️ Modify Scenario
+
+                </a>
+
+
+                <a
+                    href="/saved"
+                    class="run-again-button"
+                >
+
+                    ▶ Run Again
+
+                </a>
+
+            </div>
+
+
+            <!-- Back -->
+
+            <div class="back-button">
+
+                <a
+                    href="/"
+                    class="secondary-button"
+                >
+
+                    ← Back to Home
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {% else %}
+
+
+        <!-- =====================================
+             NO SOLUTION
+             ===================================== -->
+
+        <div class="card results-card">
+
+            <h2>
+                ❌ No Solution Found
+            </h2>
+
+            <p>
+
+                CBS could not find a collision-free
+                solution for your saved scenario.
+
+            </p>
+
+
+            <div class="saved-actions">
+
+                <a
+                    href="/custom/edit"
+                    class="modify-button"
+                >
+
+                    ✏️ Modify Scenario
+
+                </a>
+
+            </div>
+
+
+            <div class="back-button">
+
+                <a
+                    href="/"
+                    class="secondary-button"
+                >
+
+                    ← Back to Home
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {% endif %}
+
+
+    {% else %}
+
+
+        <!-- =====================================
+             NO SAVED SCENARIO
+             ===================================== -->
+
+        <div class="card results-card">
+
+            <h2>
+                📭 No Saved Scenario
+            </h2>
+
+            <p>
+
+                You haven't created a customized
+                warehouse yet.
+
+            </p>
+
+            <p style="margin-top: 10px;">
+
+                Create a custom scenario first and
+                save it to use it here.
+
+            </p>
+
+
+            <br>
+
+
+            <a
+                href="/custom"
+                class="secondary-button"
+            >
+
+                🛠️ Create Scenario
+
+            </a>
+
+
+            <div class="back-button">
+
+                <a
+                    href="/"
+                    class="secondary-button"
+                >
+
+                    ← Back to Home
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+    {% endif %}
+
+
+    <footer>
+
+        <p>
+
+            Multi-Agent Warehouse Pathfinding System
+
+        </p>
+
+    </footer>
+
+</div>
+
+
+{% if scenario_exists and success %}
+
+
+<!-- =========================================
+     CBS PATHS → JAVASCRIPT
+     ========================================= -->
+
+<script>
+
+    const animationPaths =
+        {{ animation_paths | tojson }};
+
+
+    const maxTime =
+        {{ makespan }};
+
+
+    let currentTime = 0;
+
+    let animationTimer = null;
+
+
+    function getCell(x, y) {
+
+        return document.querySelector(
+            `.warehouse-cell[data-x="${x}"][data-y="${y}"]`
+        );
+
+    }
+
+
+    function clearRobots() {
+
+        document
+            .querySelectorAll(".animated-robot")
+            .forEach(
+                robot => robot.remove()
+            );
+
+    }
+
+
+    function drawRobots(time) {
+
+        clearRobots();
+
+
+        Object.entries(animationPaths)
+            .forEach(
+                ([robotId, path]) => {
+
+                    const pathIndex =
+                        Math.min(
+                            time,
+                            path.length - 1
+                        );
+
+
+                    const position =
+                        path[pathIndex];
+
+
+                    const x =
+                        position[0];
+
+
+                    const y =
+                        position[1];
+
+
+                    const cell =
+                        getCell(x, y);
+
+
+                    if (!cell) {
+                        return;
+                    }
+
+
+                    const robot =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    robot.className =
+                        "animated-robot";
+
+
+                    robot.innerHTML = `
+                        <span
+                            class="animated-robot-icon"
+                        >
+                            🤖
+                        </span>
+
+                        <span
+                            class="animated-robot-label"
+                        >
+                            R${robotId}
+                        </span>
+                    `;
+
+
+                    cell.appendChild(
+                        robot
+                    );
+
+                }
+            );
+
+
+        document.getElementById(
+            "current-time"
+        ).textContent = time;
+
+    }
+
+
+    function playAnimation() {
+
+        if (
+            animationTimer !== null
+        ) {
+
+            return;
+
+        }
+
+
+        animationTimer =
+            setInterval(
+                () => {
+
+                    if (
+                        currentTime >= maxTime
+                    ) {
+
+                        clearInterval(
+                            animationTimer
+                        );
+
+                        animationTimer =
+                            null;
+
+                        return;
+
+                    }
+
+
+                    currentTime++;
+
+                    drawRobots(
+                        currentTime
+                    );
+
+                },
+                600
+            );
+
+    }
+
+
+    function pauseAnimation() {
+
+        if (
+            animationTimer !== null
+        ) {
+
+            clearInterval(
+                animationTimer
+            );
+
+            animationTimer =
+                null;
+
+        }
+
+    }
+
+
+    function restartAnimation() {
+
+        pauseAnimation();
+
+        currentTime = 0;
+
+        drawRobots(
+            currentTime
+        );
+
+    }
+
+
+    document.getElementById(
+        "play-button"
+    ).addEventListener(
+        "click",
+        playAnimation
+    );
+
+
+    document.getElementById(
+        "pause-button"
+    ).addEventListener(
+        "click",
+        pauseAnimation
+    );
+
+
+    document.getElementById(
+        "restart-button"
+    ).addEventListener(
+        "click",
+        restartAnimation
+    );
+
+
+    drawRobots(0);
+
+</script>
+
+{% endif %}
+
+
+</body>
+
+</html>

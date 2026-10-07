@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Predefined Scenario</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <header>
+
+        <div class="icon">📦</div>
+
+        <h1>Predefined Scenario</h1>
+
+        <p>
+            Built-in warehouse scenario
+        </p>
+
+    </header>
+
+
+    {% if success %}
+
+    <!-- =========================================
+         Warehouse
+         ========================================= -->
+
+    <div class="warehouse-section">
+
+        <h2>🏭 Warehouse Layout</h2>
+
+        <p class="section-description">
+            CBS-generated collision-free paths
+        </p>
+
+
+        <div id="warehouse-grid"
+             class="warehouse-grid">
+
+            {% for y in range(grid.height) %}
+
+                {% for x in range(grid.width) %}
+
+                    {% set key = x|string + "," + y|string %}
+
+                    <div
+                        class="warehouse-cell
+                        {% if key in cells and cells[key].type == 'obstacle' %}
+                            obstacle
+                        {% elif key in cells and cells[key].type == 'goal' %}
+                            goal
+                        {% else %}
+                            free
+                        {% endif %}"
+
+                        data-x="{{ x }}"
+                        data-y="{{ y }}"
+                    >
+
+                        {% if key in cells and cells[key].type == 'obstacle' %}
+
+                            <span>⬛</span>
+
+                        {% elif key in cells and cells[key].type == 'goal' %}
+
+                            <span class="goal-icon">
+                                🎯
+                            </span>
+
+                            <span class="cell-label">
+                                G{{ cells[key].id }}
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- Legend -->
+
+        <div class="legend">
+
+            <div class="legend-item">
+
+                <span class="legend-box robot-box">
+                    🤖
+                </span>
+
+                Robot
+
+            </div>
+
+
+            <div class="legend-item">
+
+                <span class="legend-box goal-box">
+                    🎯
+                </span>
+
+                Goal
+
+            </div>
+
+
+            <div class="legend-item">
+
+                <span class="legend-box obstacle-box">
+                    ⬛
+                </span>
+
+                Obstacle
+
+            </div>
+
+
+            <div class="legend-item">
+
+                <span class="legend-box free-box">
+                </span>
+
+                Free
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             Animation Controls
+             ===================================== -->
+
+        <div class="animation-controls">
+
+            <button
+                id="play-button"
+                class="animation-button play-button">
+
+                ▶ Play
+
+            </button>
+
+
+            <button
+                id="pause-button"
+                class="animation-button pause-button">
+
+                ⏸ Pause
+
+            </button>
+
+
+            <button
+                id="restart-button"
+                class="animation-button restart-button">
+
+                ↻ Restart
+
+            </button>
+
+        </div>
+
+
+        <div class="time-display">
+
+            Time:
+            <strong id="current-time">
+                0
+            </strong>
+
+            /
+
+            <strong id="max-time">
+                {{ makespan }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         CBS Results
+         ========================================= -->
+
+    <div class="card results-card">
+
+        <h2>✅ CBS Solution Found</h2>
+
+        <p>
+            The predefined warehouse scenario was
+            successfully solved without collisions.
+        </p>
+
+
+        <!-- Overall Metrics -->
+
+        <div class="metrics">
+
+            <div class="metric">
+
+                <strong>
+                    Total Path Cost
+                </strong>
+
+                <span>
+                    {{ total_cost }}
+                </span>
+
+            </div>
+
+
+            <div class="metric">
+
+                <strong>
+                    Makespan
+                </strong>
+
+                <span>
+                    {{ makespan }}
+                </span>
+
+            </div>
+
+
+            <div class="metric">
+
+                <strong>
+                    Conflicts
+                </strong>
+
+                <span>
+                    {{ conflicts }}
+                </span>
+
+            </div>
+
+
+            <div class="metric">
+
+                <strong>
+                    Nodes Expanded
+                </strong>
+
+                <span>
+                    {{ nodes }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- Back -->
+
+        <div class="back-button">
+
+            <a href="/"
+               class="secondary-button">
+
+                ← Back to Home
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    {% else %}
+
+    <!-- =========================================
+         Failure
+         ========================================= -->
+
+    <div class="card">
+
+        <h2>❌ No Solution Found</h2>
+
+        <p>
+            CBS could not find a collision-free
+            solution for the predefined scenario.
+        </p>
+
+        <br>
+
+        <a href="/"
+           class="secondary-button">
+
+            ← Back to Home
+
+        </a>
+
+    </div>
+
+    {% endif %}
+
+
+    <footer>
+
+        <p>
+            Multi-Agent Warehouse Pathfinding System
+        </p>
+
+    </footer>
+
+</div>
+
+
+<!-- =========================================
+     CBS Paths → JavaScript
+     ========================================= -->
+
+<script>
+
+    const animationPaths =
+        {{ animation_paths | tojson }};
+
+
+    const maxTime =
+        {{ makespan }};
+
+
+    let currentTime = 0;
+
+    let animationTimer = null;
+
+
+    /*
+     * Find a warehouse cell
+     * using its x and y coordinates.
+     */
+
+    function getCell(x, y) {
+
+        return document.querySelector(
+            `.warehouse-cell[data-x="${x}"][data-y="${y}"]`
+        );
+
+    }
+
+
+    /*
+     * Remove all currently
+     * displayed robots.
+     */
+
+    function clearRobots() {
+
+        document
+            .querySelectorAll(".animated-robot")
+            .forEach(robot => robot.remove());
+
+    }
+
+
+    /*
+     * Draw robots at the
+     * current CBS time.
+     */
+
+    function drawRobots(time) {
+
+        clearRobots();
+
+
+        Object.entries(animationPaths)
+            .forEach(([robotId, path]) => {
+
+                /*
+                 * If the robot has already reached
+                 * its goal, keep it at the goal.
+                 */
+
+                const pathIndex =
+                    Math.min(
+                        time,
+                        path.length - 1
+                    );
+
+
+                const position =
+                    path[pathIndex];
+
+
+                const x = position[0];
+
+                const y = position[1];
+
+
+                const cell =
+                    getCell(x, y);
+
+
+                if (!cell) {
+                    return;
+                }
+
+
+                const robot =
+                    document.createElement("div");
+
+
+                robot.className =
+                    "animated-robot";
+
+
+                robot.innerHTML = `
+                    <span class="animated-robot-icon">
+                        🤖
+                    </span>
+
+                    <span class="animated-robot-label">
+                        R${robotId}
+                    </span>
+                `;
+
+
+                cell.appendChild(robot);
+
+            });
+
+
+        document.getElementById(
+            "current-time"
+        ).textContent = time;
+
+    }
+
+
+    /*
+     * Start animation.
+     */
+
+    function playAnimation() {
+
+        if (animationTimer !== null) {
+            return;
+        }
+
+
+        animationTimer =
+            setInterval(() => {
+
+                if (currentTime >= maxTime) {
+
+                    clearInterval(animationTimer);
+
+                    animationTimer = null;
+
+                    return;
+                }
+
+
+                currentTime++;
+
+                drawRobots(currentTime);
+
+            }, 600);
+
+    }
+
+
+    /*
+     * Pause animation.
+     */
+
+    function pauseAnimation() {
+
+        if (animationTimer !== null) {
+
+            clearInterval(animationTimer);
+
+            animationTimer = null;
+
+        }
+
+    }
+
+
+    /*
+     * Restart animation.
+     */
+
+    function restartAnimation() {
+
+        pauseAnimation();
+
+        currentTime = 0;
+
+        drawRobots(currentTime);
+
+    }
+
+
+    /*
+     * Button events.
+     */
+
+    document.getElementById(
+        "play-button"
+    ).addEventListener(
+        "click",
+        playAnimation
+    );
+
+
+    document.getElementById(
+        "pause-button"
+    ).addEventListener(
+        "click",
+        pauseAnimation
+    );
+
+
+    document.getElementById(
+        "restart-button"
+    ).addEventListener(
+        "click",
+        restartAnimation
+    );
+
+
+    /*
+     * Show robots at time 0
+     * when page loads.
+     */
+
+    drawRobots(0);
+
+</script>
+
+
+</body>
+
+</html>
