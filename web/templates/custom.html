@@ -1,0 +1,3029 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+
+        {% if edit_mode %}
+            Modify Saved Scenario
+        {% else %}
+            Create Custom Scenario
+        {% endif %}
+
+    </title>
+
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+
+    <style>
+
+        /* =====================================================
+           CUSTOM / MODIFY SCENARIO
+           DARK INDUSTRIAL EDITOR
+           ===================================================== */
+
+
+        .editor-page {
+
+            padding: 28px 0 55px;
+
+        }
+
+
+        /* =====================================================
+           PAGE HEADER
+           ===================================================== */
+
+        .editor-topbar {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .editor-heading {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 13px;
+
+        }
+
+
+        .editor-heading-icon {
+
+            width: 46px;
+            height: 46px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 10px;
+
+            background: #202022;
+
+            border: 1px solid #3b3b3e;
+
+            font-size: 23px;
+
+        }
+
+
+        .editor-heading h2 {
+
+            margin: 0;
+
+            color: #f5f5f5;
+
+            font-size: 23px;
+
+            font-weight: 700;
+
+        }
+
+
+        .editor-heading p {
+
+            margin: 4px 0 0;
+
+            color: #8f8f94;
+
+            font-size: 12px;
+
+        }
+
+
+        .editor-tag {
+
+            padding: 8px 13px;
+
+            background: #202022;
+
+            border: 1px solid #3b3b3e;
+
+            border-radius: 18px;
+
+            color: #22c55e;
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.7px;
+
+        }
+
+
+        /* =====================================================
+           MAIN EDITOR LAYOUT
+           ===================================================== */
+
+        .editor-layout {
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                330px;
+
+            gap: 18px;
+
+            align-items: stretch;
+
+        }
+
+
+        /* =====================================================
+           WAREHOUSE PANEL
+           ===================================================== */
+
+        .editor-warehouse-panel {
+
+            min-width: 0;
+
+            background: #181819;
+
+            border: 1px solid #3a3a3d;
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+        }
+
+
+        .editor-warehouse-header {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 14px 17px;
+
+            background: #1e1e20;
+
+            border-bottom: 1px solid #37373a;
+
+        }
+
+
+        .editor-warehouse-title {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+
+        .editor-warehouse-title span {
+
+            font-size: 16px;
+
+        }
+
+
+        .editor-warehouse-title h3 {
+
+            margin: 0;
+
+            color: #e8e8ea;
+
+            font-size: 13px;
+
+        }
+
+
+        .editor-warehouse-header-right {
+
+            color: #77777d;
+
+            font-size: 10px;
+
+        }
+
+
+        /* =====================================================
+           WAREHOUSE CANVAS
+           ===================================================== */
+
+        .editor-warehouse-view {
+
+            min-height: 560px;
+
+            padding: 24px;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    #29292b 0%,
+                    #222224 45%,
+                    #1a1a1c 100%
+                );
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            overflow: auto;
+
+        }
+
+
+        .custom-grid {
+
+            position: relative;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(12, 38px);
+
+            grid-template-rows:
+                repeat(12, 38px);
+
+            gap: 2px;
+
+            padding: 10px;
+
+            background: #111112;
+
+            border: 1px solid #48484b;
+
+            border-radius: 8px;
+
+            box-shadow:
+                0 18px 40px rgba(0,0,0,0.45),
+                inset 0 0 0 1px rgba(255,255,255,0.02);
+
+        }
+
+
+        /* =====================================================
+           GRID CELLS
+           ===================================================== */
+
+        .custom-cell {
+
+            position: relative;
+
+            width: 38px;
+            height: 38px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #464648,
+                    #3f3f41
+                );
+
+            border: 1px solid #515154;
+
+            cursor: pointer;
+
+            transition:
+                background 0.12s ease,
+                border-color 0.12s ease,
+                transform 0.12s ease;
+
+        }
+
+
+        .custom-cell:hover {
+
+            background: #505054;
+
+            border-color: #737379;
+
+        }
+
+
+        .custom-cell.free {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #464648,
+                    #3f3f41
+                );
+
+        }
+
+
+        /* =====================================================
+           OBSTACLE
+           ===================================================== */
+
+        .custom-cell.obstacle {
+
+            background: #29292b;
+
+            border-color: #1b1b1d;
+
+        }
+
+
+        .custom-cell.obstacle span {
+
+            color: #77777c;
+
+            font-size: 16px;
+
+        }
+
+
+        /* =====================================================
+           ROBOT
+           ===================================================== */
+
+        .custom-cell.robot {
+
+            background: #343437;
+
+            border: 2px solid #22c55e;
+
+            box-shadow:
+                inset 0 0 12px rgba(34,197,94,0.08);
+
+        }
+
+
+        .custom-cell.robot span {
+
+            font-size: 17px;
+
+            position: relative;
+
+            z-index: 2;
+
+        }
+
+
+        .custom-cell.robot small {
+
+            position: absolute;
+
+            top: -7px;
+
+            right: -6px;
+
+            padding: 2px 4px;
+
+            border-radius: 4px;
+
+            background: #151516;
+
+            border: 1px solid #555559;
+
+            color: #eeeeef;
+
+            font-size: 7px;
+
+            font-weight: 700;
+
+            line-height: 1;
+
+            z-index: 5;
+
+        }
+
+
+        /* =====================================================
+           GOAL
+           ===================================================== */
+
+        .custom-cell.goal {
+
+            background: #373739;
+
+            border: 2px solid #22c55e;
+
+            box-shadow:
+                inset 0 0 12px rgba(34,197,94,0.08);
+
+        }
+
+
+        .custom-cell.goal span {
+
+            font-size: 15px;
+
+        }
+
+
+        .custom-cell.goal small {
+
+            position: absolute;
+
+            bottom: 2px;
+
+            left: 3px;
+
+            color: #c5c5ca;
+
+            font-size: 7px;
+
+            font-weight: 700;
+
+        }
+
+
+        /* =====================================================
+           LEGEND
+           ===================================================== */
+
+        .editor-legend {
+
+            display: flex;
+
+            align-items: center;
+
+            flex-wrap: wrap;
+
+            gap: 16px;
+
+            padding: 12px 16px;
+
+            background: #181819;
+
+            border-top: 1px solid #343437;
+
+        }
+
+
+        .editor-legend-item {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+            color: #99999e;
+
+            font-size: 10px;
+
+        }
+
+
+        .legend-symbol {
+
+            width: 12px;
+            height: 12px;
+
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 3px;
+
+            font-size: 8px;
+
+        }
+
+
+        .legend-obstacle {
+
+            background: #29292b;
+
+            border: 1px solid #171719;
+
+        }
+
+
+        .legend-robot {
+
+            background: #343437;
+
+            border: 2px solid #22c55e;
+
+        }
+
+
+        .legend-goal {
+
+            background: #373739;
+
+            border: 2px solid #22c55e;
+
+        }
+
+
+        /* =====================================================
+           RIGHT EDITOR SIDEBAR
+           ===================================================== */
+
+        .editor-sidebar {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 12px;
+
+        }
+
+
+        .editor-card {
+
+            background: #1b1b1d;
+
+            border: 1px solid #39393c;
+
+            border-radius: 10px;
+
+            padding: 16px;
+
+        }
+
+
+        .editor-card-title {
+
+            margin-bottom: 12px;
+
+            color: #8f8f95;
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.8px;
+
+            text-transform: uppercase;
+
+        }
+
+
+        /* =====================================================
+           TOOL BUTTONS
+           ===================================================== */
+
+        .editor-tools {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 8px;
+
+        }
+
+
+        .tool-button {
+
+            min-height: 48px;
+
+            padding: 8px;
+
+            background: #29292b;
+
+            border: 1px solid #414144;
+
+            border-radius: 7px;
+
+            color: #d8d8da;
+
+            font-family: inherit;
+
+            font-size: 11px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition:
+                background 0.15s ease,
+                border-color 0.15s ease,
+                transform 0.15s ease;
+
+        }
+
+
+        .tool-button:hover {
+
+            background: #353538;
+
+            transform: translateY(-1px);
+
+        }
+
+
+        .tool-button.active-tool {
+
+            background: #343438;
+
+            border-color: #22c55e;
+
+            color: #ffffff;
+
+            box-shadow:
+                inset 0 0 0 1px
+                rgba(34,197,94,0.08);
+
+        }
+
+
+        /* =====================================================
+           CURRENT MODE
+           ===================================================== */
+
+        .mode-display {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 11px 12px;
+
+            background: #151516;
+
+            border: 1px solid #303033;
+
+            border-radius: 7px;
+
+        }
+
+
+        .mode-display span:first-child {
+
+            color: #77777c;
+
+            font-size: 10px;
+
+        }
+
+
+        .mode-display span:last-child {
+
+            color: #22c55e;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+        }
+
+
+        /* =====================================================
+           STATISTICS
+           ===================================================== */
+
+        .editor-stats {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 7px;
+
+        }
+
+
+        .editor-stat {
+
+            padding: 10px 7px;
+
+            background: #202022;
+
+            border: 1px solid #353538;
+
+            border-radius: 7px;
+
+            text-align: center;
+
+        }
+
+
+        .editor-stat-label {
+
+            color: #85858a;
+
+            font-size: 8px;
+
+            font-weight: 600;
+
+            text-transform: uppercase;
+
+        }
+
+
+        .editor-stat-value {
+
+            margin-top: 4px;
+
+            color: #f1f1f2;
+
+            font-size: 18px;
+
+            font-weight: 700;
+
+        }
+
+
+        /* =====================================================
+           INSTRUCTIONS
+           ===================================================== */
+
+        .editor-instructions {
+
+            color: #85858a;
+
+            font-size: 10px;
+
+            line-height: 1.6;
+
+        }
+
+
+        .editor-instructions strong {
+
+            color: #c9c9cc;
+
+        }
+
+
+        .editor-instructions p {
+
+            margin: 0 0 7px;
+
+        }
+
+
+        .editor-instructions p:last-child {
+
+            margin-bottom: 0;
+
+        }
+
+
+        /* =====================================================
+           ACTION BUTTONS
+           ===================================================== */
+
+        .editor-actions {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 8px;
+
+        }
+
+
+        .editor-action {
+
+            width: 100%;
+
+            min-height: 40px;
+
+            border-radius: 7px;
+
+            font-family: inherit;
+
+            font-size: 11px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition:
+                background 0.15s ease,
+                transform 0.15s ease;
+
+        }
+
+
+        .editor-action:hover {
+
+            transform: translateY(-1px);
+
+        }
+
+
+        .clear-button {
+
+            background: #29292b;
+
+            border: 1px solid #454548;
+
+            color: #dddddf;
+
+        }
+
+
+        .clear-button:hover {
+
+            background: #38383b;
+
+        }
+
+
+        .save-button {
+
+            background: #29292b;
+
+            border: 1px solid #22c55e;
+
+            color: #22c55e;
+
+        }
+
+
+        .save-button:hover {
+
+            background: #203326;
+
+        }
+
+
+        .run-button {
+
+            background: #16803c;
+
+            border: 1px solid #1b9948;
+
+            color: white;
+
+        }
+
+
+        .run-button:hover {
+
+            background: #1b9948;
+
+        }
+
+
+        /* =====================================================
+           MESSAGE
+           ===================================================== */
+
+        .editor-message {
+
+            display: none;
+
+            padding: 10px 12px;
+
+            border-radius: 7px;
+
+            font-size: 10px;
+
+            line-height: 1.4;
+
+        }
+
+
+        .editor-message.success {
+
+            display: block;
+
+            background: rgba(34,197,94,0.08);
+
+            border: 1px solid rgba(34,197,94,0.25);
+
+            color: #4ade80;
+
+        }
+
+
+        .editor-message.error {
+
+            display: block;
+
+            background: rgba(239,68,68,0.08);
+
+            border: 1px solid rgba(239,68,68,0.25);
+
+            color: #f87171;
+
+        }
+
+
+        /* =====================================================
+           FOOTER ACTIONS
+           ===================================================== */
+
+        .editor-footer {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-top: 16px;
+
+        }
+
+
+        .editor-footer-note {
+
+            color: #68686d;
+
+            font-size: 10px;
+
+        }
+
+
+        .editor-back-button {
+
+            display: inline-block;
+
+            padding: 10px 17px;
+
+            background: #29292b;
+
+            border: 1px solid #414144;
+
+            border-radius: 7px;
+
+            color: #dddddf;
+
+            text-decoration: none;
+
+            font-size: 11px;
+
+            font-weight: 600;
+
+        }
+
+
+        .editor-back-button:hover {
+
+            background: #353538;
+
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (max-width: 1050px) {
+
+            .editor-layout {
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .editor-sidebar {
+
+                display: grid;
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+
+            }
+
+        }
+
+
+        @media (max-width: 700px) {
+
+            .editor-topbar {
+
+                align-items: flex-start;
+
+                flex-direction: column;
+
+            }
+
+
+            .editor-sidebar {
+
+                display: flex;
+
+            }
+
+
+            .editor-warehouse-view {
+
+                justify-content: flex-start;
+
+            }
+
+
+            .editor-footer {
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+            }
+
+        }
+
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="container">
+
+        <div class="logo-section">
+
+            <div class="logo-icon">
+                🤖
+            </div>
+
+            <div class="logo-text">
+
+                <h1>
+                    Multi-Agent Warehouse
+                </h1>
+
+                <p>
+                    Collision-free pathfinding using
+                    Cooperative Conflict-Based Search
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="cbs-badge">
+            CBS
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<main class="editor-page">
+
+    <div class="container">
+
+
+        <!-- =================================================
+             PAGE HEADER
+             ================================================= -->
+
+        <div class="editor-topbar">
+
+
+            <div class="editor-heading">
+
+
+                <div class="editor-heading-icon">
+
+                    {% if edit_mode %}
+                        ✏️
+                    {% else %}
+                        🛠️
+                    {% endif %}
+
+                </div>
+
+
+                <div>
+
+                    <h2>
+
+                        {% if edit_mode %}
+                            Modify Saved Scenario
+                        {% else %}
+                            Create Custom Scenario
+                        {% endif %}
+
+                    </h2>
+
+
+                    <p>
+
+                        {% if edit_mode %}
+                            Modify your existing warehouse
+                        {% else %}
+                            Build your own warehouse
+                        {% endif %}
+
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="editor-tag">
+
+                {% if edit_mode %}
+                    EDIT SAVED SCENARIO
+                {% else %}
+                    NEW SCENARIO
+                {% endif %}
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             EDITOR
+             ================================================= -->
+
+        <div class="editor-layout">
+
+
+            <!-- =================================================
+                 WAREHOUSE
+                 ================================================= -->
+
+            <section class="editor-warehouse-panel">
+
+
+                <div class="editor-warehouse-header">
+
+
+                    <div class="editor-warehouse-title">
+
+                        <span>
+                            🏭
+                        </span>
+
+                        <h3>
+                            Warehouse Editor
+                        </h3>
+
+                    </div>
+
+
+                    <div class="editor-warehouse-header-right">
+
+                        12 × 12 GRID
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="editor-warehouse-view">
+
+
+                    <div
+                        id="custom-grid"
+                        class="custom-grid"
+                    ></div>
+
+
+                </div>
+
+
+
+                <!-- =================================================
+                     LEGEND
+                     ================================================= -->
+
+                <div class="editor-legend">
+
+
+                    <div class="editor-legend-item">
+
+                        <span
+                            class="
+                                legend-symbol
+                                legend-obstacle
+                            "
+                        >
+                            ▦
+                        </span>
+
+                        Obstacle
+
+                    </div>
+
+
+                    <div class="editor-legend-item">
+
+                        <span
+                            class="
+                                legend-symbol
+                                legend-robot
+                            "
+                        >
+                            🤖
+                        </span>
+
+                        Robot
+
+                    </div>
+
+
+                    <div class="editor-legend-item">
+
+                        <span
+                            class="
+                                legend-symbol
+                                legend-goal
+                            "
+                        >
+                            🎯
+                        </span>
+
+                        Goal
+
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =================================================
+                 SIDEBAR
+                 ================================================= -->
+
+            <aside class="editor-sidebar">
+
+
+                <!-- =================================================
+                     TOOLS
+                     ================================================= -->
+
+                <div class="editor-card">
+
+
+                    <div class="editor-card-title">
+                        Editor Controls
+                    </div>
+
+
+                    <div class="editor-tools">
+
+
+                        <button
+                            id="obstacle-mode"
+                            class="
+                                tool-button
+                                active-tool
+                            "
+                        >
+                            ⬛ Obstacle
+                        </button>
+
+
+                        <button
+                            id="robot-mode"
+                            class="tool-button"
+                        >
+                            🤖 Robot
+                        </button>
+
+
+                        <button
+                            id="goal-mode"
+                            class="tool-button"
+                        >
+                            🎯 Goal
+                        </button>
+
+
+                        <button
+                            id="erase-mode"
+                            class="tool-button"
+                        >
+                            🧹 Erase
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     CURRENT MODE
+                     ================================================= -->
+
+                <div class="editor-card">
+
+
+                    <div class="editor-card-title">
+                        Current Mode
+                    </div>
+
+
+                    <div class="mode-display">
+
+                        <span>
+                            Selected Tool
+                        </span>
+
+
+                        <span id="current-mode">
+                            Obstacle
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     STATISTICS
+                     ================================================= -->
+
+                <div class="editor-card">
+
+
+                    <div class="editor-card-title">
+                        Warehouse Statistics
+                    </div>
+
+
+                    <div class="editor-stats">
+
+
+                        <div class="editor-stat">
+
+                            <div class="editor-stat-label">
+                                Robots
+                            </div>
+
+                            <div
+                                id="robot-count"
+                                class="editor-stat-value"
+                            >
+                                0
+                            </div>
+
+                        </div>
+
+
+                        <div class="editor-stat">
+
+                            <div class="editor-stat-label">
+                                Goals
+                            </div>
+
+                            <div
+                                id="goal-count"
+                                class="editor-stat-value"
+                            >
+                                0
+                            </div>
+
+                        </div>
+
+
+                        <div class="editor-stat">
+
+                            <div class="editor-stat-label">
+                                Obstacles
+                            </div>
+
+                            <div
+                                id="obstacle-count"
+                                class="editor-stat-value"
+                            >
+                                0
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     INSTRUCTIONS
+                     ================================================= -->
+
+                <div class="editor-card">
+
+
+                    <div class="editor-card-title">
+                        How To Use
+                    </div>
+
+
+                    <div class="editor-instructions">
+
+
+                        <p>
+                            <strong>Obstacle:</strong>
+                            Click cells to add or remove obstacles.
+                        </p>
+
+
+                        <p>
+                            <strong>Robot:</strong>
+                            Click an empty cell to add a robot.
+                        </p>
+
+
+                        <p>
+                            <strong>Goal:</strong>
+                            Add a goal for the next robot without one.
+                        </p>
+
+
+                        <p>
+                            <strong>Erase:</strong>
+                            Remove a robot, goal or obstacle.
+                        </p>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     ACTIONS
+                     ================================================= -->
+
+                <div class="editor-card">
+
+
+                    <div class="editor-card-title">
+                        Scenario Actions
+                    </div>
+
+
+                    <div class="editor-actions">
+
+
+                        <button
+                            id="clear-button"
+                            class="
+                                editor-action
+                                clear-button
+                            "
+                        >
+                            🗑️ Clear Warehouse
+                        </button>
+
+
+                        <button
+                            id="save-button"
+                            class="
+                                editor-action
+                                save-button
+                            "
+                        >
+                            💾 Save Scenario
+                        </button>
+
+
+                        <button
+                            id="save-run-button"
+                            class="
+                                editor-action
+                                run-button
+                            "
+                        >
+                            ▶ Save & Run CBS
+                        </button>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- =================================================
+                     MESSAGE
+                     ================================================= -->
+
+                <div
+                    id="editor-message"
+                    class="editor-message"
+                ></div>
+
+
+            </aside>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             FOOTER ACTION
+             ================================================= -->
+
+        <div class="editor-footer">
+
+
+            <div class="editor-footer-note">
+
+                {% if edit_mode %}
+
+                    Changes will overwrite
+                    <strong>dynamic.json</strong>
+
+                {% else %}
+
+                    Your scenario will be saved as
+                    <strong>dynamic.json</strong>
+
+                {% endif %}
+
+            </div>
+
+
+            <a
+                href="{% if edit_mode %}/saved{% else %}/{% endif %}"
+                class="editor-back-button"
+            >
+
+                {% if edit_mode %}
+                    ← Back to Saved Scenario
+                {% else %}
+                    ← Back to Home
+                {% endif %}
+
+            </a>
+
+
+        </div>
+
+
+    </div>
+
+</main>
+
+
+
+<footer>
+
+    <p>
+        Multi-Agent Warehouse Pathfinding System
+    </p>
+
+</footer>
+
+
+
+<script>
+
+
+    /* =====================================================
+       CONSTANTS
+       ===================================================== */
+
+    const GRID_SIZE = 12;
+
+
+    let currentMode = "obstacle";
+
+
+    /*
+     * Grid cell data.
+     *
+     * key:
+     * "x,y"
+     *
+     * value:
+     * obstacle / robot / goal
+     */
+
+    const cells = {};
+
+
+    /*
+     * Robot data.
+     */
+
+    const robots = {};
+
+
+    /*
+     * Are we editing an existing
+     * saved scenario?
+     */
+
+    const editMode =
+        {{ edit_mode | default(false) | tojson }};
+
+
+    /*
+     * Existing dynamic.json data.
+     */
+
+    const savedScenario =
+        {{ saved_scenario | default(none) | tojson }};
+
+
+
+    /* =====================================================
+       CREATE GRID
+       ===================================================== */
+
+    function createGrid() {
+
+        const grid =
+            document.getElementById(
+                "custom-grid"
+            );
+
+
+        grid.innerHTML = "";
+
+
+        for (
+            let y = 0;
+            y < GRID_SIZE;
+            y++
+        ) {
+
+
+            for (
+                let x = 0;
+                x < GRID_SIZE;
+                x++
+            ) {
+
+
+                const cell =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                cell.className =
+                    "custom-cell free";
+
+
+                cell.dataset.x =
+                    x;
+
+
+                cell.dataset.y =
+                    y;
+
+
+                cell.addEventListener(
+                    "click",
+                    () =>
+                        handleCellClick(
+                            x,
+                            y,
+                            cell
+                        )
+                );
+
+
+                grid.appendChild(
+                    cell
+                );
+
+            }
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       LOAD SAVED SCENARIO
+       ===================================================== */
+
+    function loadSavedScenario() {
+
+
+        if (
+            !editMode ||
+            !savedScenario
+        ) {
+
+            return;
+
+        }
+
+
+        const savedGrid =
+            savedScenario.grid;
+
+
+        /*
+         * Load obstacles.
+         */
+
+        for (
+            let y = 0;
+            y < savedGrid.length;
+            y++
+        ) {
+
+
+            for (
+                let x = 0;
+                x < savedGrid[y].length;
+                x++
+            ) {
+
+
+                if (
+                    savedGrid[y][x] === 1
+                ) {
+
+                    cells[
+                        `${x},${y}`
+                    ] = "obstacle";
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * Load robots and goals.
+         */
+
+        savedScenario.robots.forEach(
+            robot => {
+
+
+                robots[
+                    robot.id
+                ] = {
+
+                    start: {
+
+                        x:
+                            robot.start[0],
+
+                        y:
+                            robot.start[1]
+
+                    },
+
+
+                    goal: {
+
+                        x:
+                            robot.goal[0],
+
+                        y:
+                            robot.goal[1]
+
+                    }
+
+                };
+
+
+                cells[
+                    `${robot.start[0]},${robot.start[1]}`
+                ] = "robot";
+
+
+                cells[
+                    `${robot.goal[0]},${robot.goal[1]}`
+                ] = "goal";
+
+            }
+        );
+
+    }
+
+
+
+    /* =====================================================
+       NEXT ROBOT ID
+       ===================================================== */
+
+    function getNextRobotId() {
+
+        const ids =
+            Object.keys(
+                robots
+            ).map(
+                Number
+            );
+
+
+        if (
+            ids.length === 0
+        ) {
+
+            return 1;
+
+        }
+
+
+        return Math.max(
+            ...ids
+        ) + 1;
+
+    }
+
+
+
+    /* =====================================================
+       FIND ROBOT AT POSITION
+       ===================================================== */
+
+    function findRobotAt(
+        x,
+        y
+    ) {
+
+
+        for (
+            const id in robots
+        ) {
+
+
+            const robot =
+                robots[id];
+
+
+            if (
+                robot.start.x === x &&
+                robot.start.y === y
+            ) {
+
+                return {
+
+                    id:
+                        Number(id),
+
+                    type:
+                        "start"
+
+                };
+
+            }
+
+
+            if (
+                robot.goal &&
+                robot.goal.x === x &&
+                robot.goal.y === y
+            ) {
+
+                return {
+
+                    id:
+                        Number(id),
+
+                    type:
+                        "goal"
+
+                };
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+
+    /* =====================================================
+       FIND ROBOT WITHOUT GOAL
+       ===================================================== */
+
+    function findRobotWithoutGoal() {
+
+
+        for (
+            const id in robots
+        ) {
+
+
+            if (
+                !robots[id].goal
+            ) {
+
+                return Number(id);
+
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+
+    /* =====================================================
+       CELL CLICK
+       ===================================================== */
+
+    function handleCellClick(
+        x,
+        y,
+        cell
+    ) {
+
+
+        const key =
+            `${x},${y}`;
+
+
+
+        /* =================================================
+           OBSTACLE
+           ================================================= */
+
+        if (
+            currentMode === "obstacle"
+        ) {
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                cells[key] =
+                    "free";
+
+            }
+
+            else {
+
+                cells[key] =
+                    "obstacle";
+
+            }
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+
+        /* =================================================
+           ROBOT
+           ================================================= */
+
+        if (
+            currentMode === "robot"
+        ) {
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const robotId =
+                getNextRobotId();
+
+
+            robots[robotId] = {
+
+                start: {
+
+                    x:
+                        x,
+
+                    y:
+                        y
+
+                },
+
+
+                goal:
+                    null
+
+            };
+
+
+            cells[key] =
+                "robot";
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+
+        /* =================================================
+           GOAL
+           ================================================= */
+
+        if (
+            currentMode === "goal"
+        ) {
+
+
+            if (
+                cells[key] === "obstacle"
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                findRobotAt(
+                    x,
+                    y
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const robotId =
+                findRobotWithoutGoal();
+
+
+            if (
+                robotId === null
+            ) {
+
+                showMessage(
+                    "Add a robot before adding a goal.",
+                    "error"
+                );
+
+                return;
+
+            }
+
+
+            /*
+             * Prevent duplicate goals.
+             */
+
+            for (
+                const id in robots
+            ) {
+
+
+                if (
+                    robots[id].goal &&
+                    robots[id].goal.x === x &&
+                    robots[id].goal.y === y
+                ) {
+
+                    return;
+
+                }
+
+            }
+
+
+            robots[
+                robotId
+            ].goal = {
+
+                x:
+                    x,
+
+                y:
+                    y
+
+            };
+
+
+            cells[key] =
+                "goal";
+
+
+            renderGrid();
+
+            updateStats();
+
+            return;
+
+        }
+
+
+
+        /* =================================================
+           ERASE
+           ================================================= */
+
+        if (
+            currentMode === "erase"
+        ) {
+
+
+            const robotInfo =
+                findRobotAt(
+                    x,
+                    y
+                );
+
+
+            if (
+                robotInfo
+            ) {
+
+
+                const id =
+                    robotInfo.id;
+
+
+                /*
+                 * If deleting a robot,
+                 * delete its goal too.
+                 */
+
+                if (
+                    robots[id].goal
+                ) {
+
+                    const goal =
+                        robots[id].goal;
+
+
+                    const goalKey =
+                        `${goal.x},${goal.y}`;
+
+
+                    delete cells[
+                        goalKey
+                    ];
+
+                }
+
+
+                delete robots[
+                    id
+                ];
+
+            }
+
+
+            delete cells[
+                key
+            ];
+
+
+            renderGrid();
+
+            updateStats();
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       RENDER GRID
+       ===================================================== */
+
+    function renderGrid() {
+
+
+        const grid =
+            document.getElementById(
+                "custom-grid"
+            );
+
+
+        const gridCells =
+            grid.children;
+
+
+        for (
+            let i = 0;
+            i < gridCells.length;
+            i++
+        ) {
+
+
+            const cell =
+                gridCells[i];
+
+
+            const x =
+                Number(
+                    cell.dataset.x
+                );
+
+
+            const y =
+                Number(
+                    cell.dataset.y
+                );
+
+
+            const key =
+                `${x},${y}`;
+
+
+            cell.className =
+                "custom-cell";
+
+
+            cell.innerHTML =
+                "";
+
+
+            /* =============================================
+               FREE
+               ============================================= */
+
+            if (
+                !cells[key]
+            ) {
+
+                cell.classList.add(
+                    "free"
+                );
+
+                continue;
+
+            }
+
+
+            /* =============================================
+               OBSTACLE
+               ============================================= */
+
+            if (
+                cells[key] ===
+                "obstacle"
+            ) {
+
+                cell.classList.add(
+                    "obstacle"
+                );
+
+
+                cell.innerHTML =
+                    "<span>▦</span>";
+
+
+                continue;
+
+            }
+
+
+            /* =============================================
+               ROBOT
+               ============================================= */
+
+            if (
+                cells[key] ===
+                "robot"
+            ) {
+
+                cell.classList.add(
+                    "robot"
+                );
+
+
+                const robot =
+                    findRobotAt(
+                        x,
+                        y
+                    );
+
+
+                cell.innerHTML = `
+
+                    <span>
+                        🤖
+                    </span>
+
+                    <small>
+                        R${robot.id}
+                    </small>
+
+                `;
+
+
+                continue;
+
+            }
+
+
+            /* =============================================
+               GOAL
+               ============================================= */
+
+            if (
+                cells[key] ===
+                "goal"
+            ) {
+
+                cell.classList.add(
+                    "goal"
+                );
+
+
+                let goalRobotId =
+                    null;
+
+
+                for (
+                    const id in robots
+                ) {
+
+
+                    if (
+                        robots[id].goal &&
+                        robots[id].goal.x === x &&
+                        robots[id].goal.y === y
+                    ) {
+
+                        goalRobotId =
+                            id;
+
+                        break;
+
+                    }
+
+                }
+
+
+                cell.innerHTML = `
+
+                    <span>
+                        🎯
+                    </span>
+
+                    <small>
+                        G${goalRobotId}
+                    </small>
+
+                `;
+
+            }
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       CHANGE MODE
+       ===================================================== */
+
+    function setMode(
+        mode
+    ) {
+
+
+        currentMode =
+            mode;
+
+
+        document
+            .querySelectorAll(
+                ".tool-button"
+            )
+            .forEach(
+                button =>
+                    button.classList.remove(
+                        "active-tool"
+                    )
+            );
+
+
+        document
+            .getElementById(
+                `${mode}-mode`
+            )
+            .classList.add(
+                "active-tool"
+            );
+
+
+        const names = {
+
+            obstacle:
+                "Obstacle",
+
+            robot:
+                "Robot",
+
+            goal:
+                "Goal",
+
+            erase:
+                "Erase"
+
+        };
+
+
+        document.getElementById(
+            "current-mode"
+        ).textContent =
+            names[mode];
+
+    }
+
+
+
+    /* =====================================================
+       UPDATE STATISTICS
+       ===================================================== */
+
+    function updateStats() {
+
+
+        const obstacleCount =
+            Object.values(
+                cells
+            ).filter(
+                value =>
+                    value ===
+                    "obstacle"
+            ).length;
+
+
+        const robotCount =
+            Object.keys(
+                robots
+            ).length;
+
+
+        const goalCount =
+            Object.values(
+                robots
+            ).filter(
+                robot =>
+                    robot.goal !== null
+            ).length;
+
+
+        document.getElementById(
+            "robot-count"
+        ).textContent =
+            robotCount;
+
+
+        document.getElementById(
+            "goal-count"
+        ).textContent =
+            goalCount;
+
+
+        document.getElementById(
+            "obstacle-count"
+        ).textContent =
+            obstacleCount;
+
+    }
+
+
+
+    /* =====================================================
+       CREATE SCENARIO DATA
+       ===================================================== */
+
+    function createScenarioData() {
+
+
+        const grid = [];
+
+
+        for (
+            let y = 0;
+            y < GRID_SIZE;
+            y++
+        ) {
+
+
+            const row = [];
+
+
+            for (
+                let x = 0;
+                x < GRID_SIZE;
+                x++
+            ) {
+
+
+                const key =
+                    `${x},${y}`;
+
+
+                row.push(
+
+                    cells[key] ===
+                    "obstacle"
+
+                        ? 1
+
+                        : 0
+
+                );
+
+            }
+
+
+            grid.push(
+                row
+            );
+
+        }
+
+
+        const robotData =
+            Object.entries(
+                robots
+            ).map(
+                ([id, robot]) => ({
+
+                    id:
+                        Number(id),
+
+                    start: [
+
+                        robot.start.x,
+
+                        robot.start.y
+
+                    ],
+
+                    goal: [
+
+                        robot.goal.x,
+
+                        robot.goal.y
+
+                    ]
+
+                })
+            );
+
+
+        return {
+
+            grid:
+                grid,
+
+            robots:
+                robotData
+
+        };
+
+    }
+
+
+
+    /* =====================================================
+       SAVE SCENARIO
+       ===================================================== */
+
+    async function saveScenario() {
+
+
+        const incompleteRobot =
+            Object.entries(
+                robots
+            ).find(
+                ([id, robot]) =>
+                    robot.goal === null
+            );
+
+
+        if (
+            incompleteRobot
+        ) {
+
+            showMessage(
+
+                `Robot ${incompleteRobot[0]} needs a goal.`,
+
+                "error"
+
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            Object.keys(
+                robots
+            ).length === 0
+        ) {
+
+            showMessage(
+
+                "Add at least one robot.",
+
+                "error"
+
+            );
+
+            return false;
+
+        }
+
+
+        const scenario =
+            createScenarioData();
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/custom/save",
+                    {
+
+                        method:
+                            "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify(
+                                scenario
+                            )
+
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (
+                result.success
+            ) {
+
+                showMessage(
+
+                    "✓ Scenario saved to dynamic.json",
+
+                    "success"
+
+                );
+
+
+                return true;
+
+            }
+
+
+            showMessage(
+
+                result.message,
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+
+        catch (
+            error
+        ) {
+
+
+            showMessage(
+
+                "Could not connect to the server.",
+
+                "error"
+
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       SAVE & RUN
+       ===================================================== */
+
+    async function saveAndRun() {
+
+
+        const saved =
+            await saveScenario();
+
+
+        if (
+            saved
+        ) {
+
+            window.location.href =
+                "/saved";
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       CLEAR
+       ===================================================== */
+
+    function clearEditor() {
+
+
+        if (
+            !confirm(
+                "Clear the entire warehouse?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        for (
+            const key in cells
+        ) {
+
+            delete cells[
+                key
+            ];
+
+        }
+
+
+        for (
+            const id in robots
+        ) {
+
+            delete robots[
+                id
+            ];
+
+        }
+
+
+        renderGrid();
+
+        updateStats();
+
+
+        showMessage(
+
+            "Warehouse cleared.",
+
+            "success"
+
+        );
+
+    }
+
+
+
+    /* =====================================================
+       MESSAGE
+       ===================================================== */
+
+    function showMessage(
+        message,
+        type
+    ) {
+
+
+        const element =
+            document.getElementById(
+                "editor-message"
+            );
+
+
+        element.textContent =
+            message;
+
+
+        element.className =
+            "editor-message " +
+            type;
+
+    }
+
+
+
+    /* =====================================================
+       BUTTON EVENTS
+       ===================================================== */
+
+    document
+        .getElementById(
+            "obstacle-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "obstacle"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "robot-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "robot"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "goal-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "goal"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "erase-mode"
+        )
+        .addEventListener(
+            "click",
+            () =>
+                setMode(
+                    "erase"
+                )
+        );
+
+
+    document
+        .getElementById(
+            "clear-button"
+        )
+        .addEventListener(
+            "click",
+            clearEditor
+        );
+
+
+    document
+        .getElementById(
+            "save-button"
+        )
+        .addEventListener(
+            "click",
+            saveScenario
+        );
+
+
+    document
+        .getElementById(
+            "save-run-button"
+        )
+        .addEventListener(
+            "click",
+            saveAndRun
+        );
+
+
+
+    /* =====================================================
+       INITIALIZE
+       ===================================================== */
+
+    createGrid();
+
+    loadSavedScenario();
+
+    renderGrid();
+
+    updateStats();
+
+</script>
+
+
+</body>
+
+</html>

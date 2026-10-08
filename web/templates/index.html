@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Multi-Agent Warehouse</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+
+        <div class="logo-section">
+
+            <div class="logo-icon">
+                🤖
+            </div>
+
+            <div class="logo-text">
+                <h1>Multi-Agent Warehouse</h1>
+                <p>
+                    Collision-free pathfinding using Cooperative
+                    Conflict-Based Search
+                </p>
+            </div>
+
+        </div>
+
+        <div class="cbs-badge">
+            CBS
+        </div>
+
+    </div>
+</header>
+
+
+<main class="page">
+
+    <div class="container">
+
+        <div class="page-title">
+            <h2>Warehouse Scenarios</h2>
+            <p>
+                Select a scenario to visualize and run multi-agent pathfinding.
+            </p>
+        </div>
+
+
+        <div class="home-grid">
+
+            <!-- PREDEFINED SCENARIO -->
+
+            <a href="/predefined" class="option-card">
+
+                <div class="option-icon">
+                    📦
+                </div>
+
+                <h3>
+                    Predefined Scenario
+                </h3>
+
+                <p>
+                    Explore and run the built-in warehouse scenario
+                    with predefined robots, obstacles and goals.
+                </p>
+
+                <div class="option-arrow">
+                    View &amp; Run →
+                </div>
+
+            </a>
+
+
+            <!-- SAVED SCENARIO -->
+
+            <a href="/saved" class="option-card">
+
+                <div class="option-icon">
+                    💾
+                </div>
+
+                <h3>
+                    My Saved Scenario
+                </h3>
+
+                <p>
+                    Run your previously customized warehouse scenario
+                    saved in <strong>dynamic.json</strong>.
+                </p>
+
+                <div class="option-arrow">
+                    Run Saved →
+                </div>
+
+            </a>
+
+
+            <!-- CREATE CUSTOM SCENARIO -->
+
+            <a href="/custom" class="option-card">
+
+                <div class="option-icon">
+                    🛠️
+                </div>
+
+                <h3>
+                    Create Custom Scenario
+                </h3>
+
+                <p>
+                    Build your own warehouse by adding obstacles,
+                    robots and goals.
+                </p>
+
+                <div class="option-arrow">
+                    Create Scenario →
+                </div>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer>
+    Multi-Agent Warehouse Pathfinding System
+</footer>
+
+</body>
+</html>
