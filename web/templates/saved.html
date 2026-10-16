@@ -1,31 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Saved Scenario</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <style>
-
-        /* =====================================================
-           SAVED SCENARIO PAGE
-           ===================================================== */
-
         .simulation-page {
             padding: 28px 0 50px;
         }
+        .warehouse-cell.temporary-obstacle {
+    outline: 2px solid #f59e0b;
+    outline-offset: -3px;
+}
 
         .simulation-topbar {
             display: flex;
@@ -44,842 +33,490 @@
         .simulation-heading-icon {
             width: 46px;
             height: 46px;
-
             display: flex;
             align-items: center;
             justify-content: center;
-
             border-radius: 10px;
-
             background: #202022;
             border: 1px solid #3b3b3e;
-
             font-size: 23px;
         }
 
         .simulation-heading h2 {
             margin: 0;
-
             color: #f5f5f5;
-
             font-size: 23px;
-            font-weight: 700;
         }
 
         .simulation-heading p {
             margin: 4px 0 0;
-
             color: #8f8f94;
-
             font-size: 12px;
         }
 
         .scenario-tag {
             padding: 8px 13px;
-
             background: #202022;
             border: 1px solid #3b3b3e;
-
             border-radius: 18px;
-
             color: #bdbdc2;
-
             font-size: 11px;
             font-weight: 600;
         }
 
-
-        /* =====================================================
-           MAIN LAYOUT
-           ===================================================== */
-
         .simulation-dashboard {
             display: grid;
-
-            grid-template-columns:
-                minmax(0, 1fr)
-                335px;
-
+            grid-template-columns: minmax(0, 1fr) 335px;
             gap: 18px;
-
             align-items: stretch;
         }
 
-
-        /* =====================================================
-           WAREHOUSE
-           ===================================================== */
-
         .warehouse-panel {
             min-width: 0;
-
             background: #181819;
-
             border: 1px solid #3a3a3d;
-
             border-radius: 12px;
-
             overflow: hidden;
         }
 
         .warehouse-header {
             display: flex;
-
             align-items: center;
             justify-content: space-between;
-
             padding: 14px 17px;
-
             background: #1e1e20;
-
             border-bottom: 1px solid #37373a;
         }
 
         .warehouse-header-left {
             display: flex;
-
             align-items: center;
-
             gap: 10px;
-        }
-
-        .warehouse-header-icon {
-            font-size: 16px;
         }
 
         .warehouse-header h3 {
             margin: 0;
-
             color: #e8e8ea;
-
             font-size: 13px;
-            font-weight: 700;
         }
 
         .warehouse-header span {
             color: #77777d;
-
             font-size: 10px;
         }
 
         .warehouse-view {
             min-height: 540px;
-
             padding: 24px;
-
-            background:
-                radial-gradient(
-                    circle at center,
-                    #29292b 0%,
-                    #222224 45%,
-                    #1a1a1c 100%
-                );
-
+            background: radial-gradient(
+                circle at center,
+                #29292b 0%,
+                #222224 45%,
+                #1a1a1c 100%
+            );
             display: flex;
-
             align-items: center;
             justify-content: center;
-
             overflow: auto;
         }
 
-
-        /* =====================================================
-           GRID
-           ===================================================== */
-
         .warehouse-grid {
             position: relative;
-
             display: grid;
-
             gap: 2px;
-
             padding: 10px;
-
             background: #111112;
-
             border: 1px solid #48484b;
-
             border-radius: 8px;
-
-            box-shadow:
-                0 18px 40px rgba(0, 0, 0, 0.45),
-                inset 0 0 0 1px rgba(255,255,255,0.02);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
         }
 
         .warehouse-cell {
             position: relative;
-
             width: 38px;
             height: 38px;
-
             background: #414143;
-
             border: 1px solid #515154;
-
             overflow: visible;
         }
 
         .warehouse-cell.free {
-            background:
-                linear-gradient(
-                    135deg,
-                    #464648,
-                    #3f3f41
-                );
+            background: linear-gradient(135deg, #464648, #3f3f41);
         }
 
         .warehouse-cell.obstacle {
             background: #29292b;
-
             border-color: #1b1b1d;
         }
 
         .warehouse-cell.obstacle span {
             position: absolute;
-
             inset: 0;
-
             display: flex;
-
             align-items: center;
             justify-content: center;
-
             color: #77777c;
-
             font-size: 17px;
         }
 
         .warehouse-cell.goal {
             background: #373739;
-
             border: 2px solid #22c55e;
-
-            box-shadow:
-                inset 0 0 12px rgba(34, 197, 94, 0.08);
+            box-shadow: inset 0 0 12px rgba(34, 197, 94, 0.08);
         }
 
         .goal-icon {
             position: absolute;
-
             left: 50%;
             top: 50%;
-
             transform: translate(-50%, -55%);
-
             font-size: 15px;
         }
 
         .cell-label {
             position: absolute;
-
             left: 3px;
             bottom: 2px;
-
             color: #b8b8bd;
-
             font-size: 7px;
             font-weight: 700;
-
-            opacity: 0.8;
         }
-
-
-        /* =====================================================
-           CBS PATH OVERLAY
-           ===================================================== */
 
         #path-overlay {
             position: absolute;
-
             inset: 0;
-
             width: 100%;
             height: 100%;
-
             pointer-events: none;
-
             z-index: 5;
-
             overflow: visible;
         }
 
         .robot-path-line {
             fill: none;
-
             stroke-width: 3;
-
             stroke-dasharray: 7 5;
-
             stroke-linecap: round;
-
             stroke-linejoin: round;
-
             opacity: 0.75;
         }
 
-
-        /* =====================================================
-           ROBOTS
-           ===================================================== */
-
         .animated-robot {
             position: absolute;
-
             left: 50%;
             top: 50%;
-
             width: 27px;
             height: 27px;
-
-            transform:
-                translate(-50%, -50%);
-
+            transform: translate(-50%, -50%);
             border-radius: 7px;
-
             border: 2px solid #101010;
-
             display: flex;
-
             align-items: center;
             justify-content: center;
-
             background: #22c55e;
-
             color: white;
-
             font-size: 9px;
             font-weight: 800;
-
             z-index: 10;
-
-            box-shadow:
-                0 3px 9px rgba(0,0,0,0.65);
-        }
-
-        .animated-robot::before {
-            content: "";
-
-            position: absolute;
-
-            top: 3px;
-            left: 50%;
-
-            transform: translateX(-50%);
-
-            width: 10px;
-            height: 3px;
-
-            border-radius: 3px;
-
-            background: #202020;
-        }
-
-        .animated-robot::after {
-            content: "";
-
-            position: absolute;
-
-            bottom: -3px;
-            left: 4px;
-
-            width: 5px;
-            height: 5px;
-
-            border-radius: 50%;
-
-            background: #111;
+            box-shadow: 0 3px 9px rgba(0,0,0,0.65);
         }
 
         .animated-robot-icon {
             font-size: 12px;
-
-            position: relative;
-
-            z-index: 2;
         }
 
         .animated-robot-label {
             position: absolute;
-
             right: -6px;
             top: -7px;
-
             padding: 2px 4px;
-
             border-radius: 4px;
-
             background: #151516;
-
             border: 1px solid #555559;
-
             color: #eeeeef;
-
             font-size: 7px;
-
-            line-height: 1;
         }
-
-
-        /* =====================================================
-           LEGEND
-           ===================================================== */
 
         .warehouse-legend {
             display: flex;
-
             align-items: center;
-
             flex-wrap: wrap;
-
             gap: 16px;
-
             padding: 12px 16px;
-
-            background: #181819;
-
             border-top: 1px solid #343437;
         }
 
         .legend-item {
             display: flex;
-
             align-items: center;
-
             gap: 6px;
-
             color: #99999e;
-
             font-size: 10px;
         }
 
         .legend-symbol {
             width: 12px;
             height: 12px;
-
             display: inline-flex;
-
-            align-items: center;
-            justify-content: center;
-
             border-radius: 3px;
-
-            font-size: 8px;
         }
 
         .legend-robot {
             background: #22c55e;
-
             border: 1px solid #111;
         }
 
         .legend-goal {
             background: #373739;
-
             border: 2px solid #22c55e;
         }
 
         .legend-obstacle {
             background: #29292b;
-
             border: 1px solid #171719;
         }
 
         .legend-path {
             width: 18px;
             height: 3px;
-
-            border-radius: 3px;
-
             background: #22c55e;
         }
 
-
-        /* =====================================================
-           DASHBOARD
-           ===================================================== */
-
         .dashboard-side {
             display: flex;
-
             flex-direction: column;
-
             gap: 12px;
         }
 
         .dashboard-card {
             background: #1b1b1d;
-
             border: 1px solid #39393c;
-
             border-radius: 10px;
-
             padding: 16px;
         }
 
         .dashboard-card-title {
             margin-bottom: 11px;
-
             color: #8f8f95;
-
             font-size: 10px;
             font-weight: 700;
-
             letter-spacing: 0.8px;
-
             text-transform: uppercase;
         }
 
-
-        /* =====================================================
-           STATUS
-           ===================================================== */
-
         .status-row {
             display: flex;
-
             align-items: center;
-
             gap: 9px;
-
             padding: 10px 11px;
-
             background: #252527;
-
             border-radius: 7px;
         }
 
         .status-dot {
             width: 9px;
             height: 9px;
-
             border-radius: 50%;
-
             background: #22c55e;
-
-            box-shadow:
-                0 0 8px rgba(34,197,94,0.55);
         }
 
         .status-text {
             color: #22c55e;
-
             font-size: 12px;
             font-weight: 700;
         }
 
         .status-subtext {
             margin-top: 2px;
-
             color: #77777c;
-
             font-size: 9px;
         }
-
-
-        /* =====================================================
-           PROGRESS
-           ===================================================== */
 
         .progress-bar {
             width: 100%;
             height: 7px;
-
             background: #363638;
-
             border-radius: 10px;
-
             overflow: hidden;
         }
 
         .progress-fill {
             width: 0%;
-
             height: 100%;
-
             background: #22c55e;
-
-            border-radius: inherit;
-
             transition: width 0.25s ease;
         }
 
         .progress-info {
             display: flex;
-
-            align-items: center;
             justify-content: space-between;
-
             margin-top: 7px;
-
             color: #85858a;
-
             font-size: 10px;
         }
 
-
-        /* =====================================================
-           METRICS
-           ===================================================== */
-
         .metrics-grid {
             display: grid;
-
-            grid-template-columns:
-                repeat(2, 1fr);
-
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
 
         .metric-card {
             padding: 12px;
-
             background: #202022;
-
             border: 1px solid #353538;
-
             border-radius: 8px;
         }
 
         .metric-label {
             color: #85858a;
-
             font-size: 9px;
             font-weight: 600;
-
-            letter-spacing: 0.4px;
         }
 
         .metric-value {
             margin-top: 5px;
-
             color: #f1f1f2;
-
             font-size: 20px;
             font-weight: 700;
         }
 
-
-        /* =====================================================
-           CONTROLS
-           ===================================================== */
-
         .simulation-controls {
             display: flex;
-
             gap: 7px;
         }
 
         .simulation-control {
             flex: 1;
-
             padding: 10px 8px;
-
             background: #29292b;
-
             border: 1px solid #454548;
-
             border-radius: 7px;
-
             color: #eeeeef;
-
             font-family: inherit;
-
             font-size: 11px;
             font-weight: 600;
-
             cursor: pointer;
-        }
-
-        .simulation-control:hover {
-            background: #363639;
         }
 
         .simulation-control.play {
             background: #16803c;
-
             border-color: #1b9948;
         }
 
-        .simulation-control.play:hover {
-            background: #1b9948;
-        }
-
-
-        /* =====================================================
-           TIME
-           ===================================================== */
-
         .time-display {
             display: flex;
-
-            align-items: center;
             justify-content: space-between;
-
             margin-top: 12px;
-
             padding: 10px 12px;
-
             background: #151516;
-
             border: 1px solid #303033;
-
             border-radius: 7px;
-
             color: #85858a;
-
             font-size: 10px;
         }
 
         .time-display strong {
             color: #f1f1f2;
-
             font-size: 13px;
         }
 
-
-        /* =====================================================
-           SAVED ACTIONS
-           ===================================================== */
-
         .saved-actions {
             display: grid;
-
-            grid-template-columns:
-                repeat(2, 1fr);
-
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
-
             margin-top: 12px;
         }
 
         .saved-action {
             display: flex;
-
             align-items: center;
             justify-content: center;
-
             padding: 10px;
-
             border-radius: 7px;
-
             color: white;
-
             text-decoration: none;
-
             font-size: 11px;
             font-weight: 600;
-
-            border: 1px solid transparent;
+            border: 1px solid #454548;
+            background: #29292b;
+            cursor: pointer;
         }
 
         .saved-action.modify {
             background: #b86605;
-
-            border-color: #d27b0a;
-        }
-
-        .saved-action.modify:hover {
-            background: #ca7206;
         }
 
         .saved-action.run {
             background: #16803c;
-
-            border-color: #1b9948;
         }
 
-        .saved-action.run:hover {
-            background: #1b9948;
+        .saved-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
+        #dynamic-obstacle-panel {
+            margin: 12px;
+        }
 
-        /* =====================================================
-           FOOTER ACTION
-           ===================================================== */
+        #dynamic-obstacle-panel p {
+            color: #a1a1aa;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        #obstacle-status {
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+        }
 
         .simulation-footer-actions {
             display: flex;
-
             justify-content: space-between;
             align-items: center;
-
             margin-top: 16px;
         }
 
         .simulation-footer-note {
             color: #68686d;
-
             font-size: 10px;
         }
 
-
-        /* =====================================================
-           EMPTY / FAILURE
-           ===================================================== */
-
         .state-card {
             max-width: 650px;
-
             margin: 50px auto;
-
             padding: 35px;
-
             text-align: center;
-
             background: #1b1b1d;
-
             border: 1px solid #39393c;
-
             border-radius: 12px;
-        }
-
-        .state-card h2 {
-            margin-top: 0;
-
-            color: #f5f5f5;
         }
 
         .state-card p {
             color: #99999e;
-
             line-height: 1.6;
         }
 
-
-        /* =====================================================
-           RESPONSIVE
-           ===================================================== */
-
         @media (max-width: 1050px) {
-
             .simulation-dashboard {
                 grid-template-columns: 1fr;
             }
 
             .dashboard-side {
                 display: grid;
-
-                grid-template-columns:
-                    repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr);
             }
-
         }
 
-
         @media (max-width: 700px) {
-
             .simulation-topbar {
-                align-items: flex-start;
-
                 flex-direction: column;
+                align-items: flex-start;
             }
 
             .warehouse-view {
                 justify-content: flex-start;
-
-                overflow-x: auto;
             }
 
             .dashboard-side {
@@ -889,767 +526,440 @@
             .saved-actions {
                 grid-template-columns: 1fr;
             }
-
-            .warehouse-cell {
-                width: 32px;
-                height: 32px;
-            }
-
-            .animated-robot {
-                width: 23px;
-                height: 23px;
-            }
-
         }
-
     </style>
-
 </head>
-
 
 <body>
 
-
 <header>
-
     <div class="container">
-
         <div class="logo-section">
-
-            <div class="logo-icon">
-                🤖
-            </div>
-
+            <div class="logo-icon">🤖</div>
             <div class="logo-text">
-
-                <h1>
-                    Multi-Agent Warehouse
-                </h1>
-
+                <h1>Multi-Agent Warehouse</h1>
                 <p>
                     Collision-free pathfinding using Cooperative
                     Conflict-Based Search
                 </p>
-
             </div>
-
         </div>
-
-        <div class="cbs-badge">
-            CBS
-        </div>
-
+        <div class="cbs-badge">CBS</div>
     </div>
-
 </header>
 
-
-
 <main class="simulation-page">
-
     <div class="container">
 
-
-        <!-- =================================================
-             PAGE HEADER
-             ================================================= -->
-
         <div class="simulation-topbar">
-
             <div class="simulation-heading">
-
-                <div class="simulation-heading-icon">
-                    💾
-                </div>
-
+                <div class="simulation-heading-icon">💾</div>
                 <div>
-
-                    <h2>
-                        My Saved Scenario
-                    </h2>
-
-                    <p>
-                        Your customized warehouse
-                    </p>
-
+                    <h2>My Saved Scenario</h2>
+                    <p>Your customized warehouse</p>
                 </div>
-
             </div>
 
-
-            <div class="scenario-tag">
-                SAVED SCENARIO
-            </div>
-
+            <div class="scenario-tag">SAVED SCENARIO</div>
         </div>
-
-
 
         {% if scenario_exists %}
 
-
             {% if success %}
-
-
-            <!-- =================================================
-                 SIMULATION DASHBOARD
-                 ================================================= -->
 
             <div class="simulation-dashboard">
 
-
-                <!-- =================================================
-                     WAREHOUSE
-                     ================================================= -->
-
+                <!-- WAREHOUSE PANEL -->
                 <section class="warehouse-panel">
 
-
                     <div class="warehouse-header">
-
                         <div class="warehouse-header-left">
-
-                            <span class="warehouse-header-icon">
-                                🏭
-                            </span>
-
-                            <h3>
-                                Saved Warehouse
-                            </h3>
-
+                            <span>🏭</span>
+                            <h3>Saved Warehouse</h3>
                         </div>
-
-                        <span>
-                            CBS Generated Paths
-                        </span>
-
+                        <span>CBS Generated Paths</span>
                     </div>
 
-
-
                     <div class="warehouse-view">
-
 
                         <div
                             id="warehouse-grid"
                             class="warehouse-grid"
                             style="
-                                grid-template-columns:
-                                repeat({{ grid.width }}, 38px);
-
-                                grid-template-rows:
-                                repeat({{ grid.height }}, 38px);
+                                grid-template-columns: repeat({{ grid.width }}, 38px);
+                                grid-template-rows: repeat({{ grid.height }}, 38px);
                             "
                         >
-
-
-                            <!-- CBS PATH OVERLAY -->
 
                             <svg
                                 id="path-overlay"
                                 aria-hidden="true"
                             ></svg>
 
-
-
-                            <!-- WAREHOUSE CELLS -->
-
                             {% for y in range(grid.height) %}
-
                                 {% for x in range(grid.width) %}
 
-                                    {% set key =
-                                        x|string + "," + y|string
-                                    %}
-
+                                    {% set key = x|string + "," + y|string %}
 
                                     <div
-
                                         class="
                                             warehouse-cell
-
-                                            {% if key in cells
-                                                and cells[key].type == 'obstacle'
-                                            %}
+                                            {% if key in cells and cells[key].type == 'obstacle' %}
                                                 obstacle
-
-                                            {% elif key in cells
-                                                and cells[key].type == 'goal'
-                                            %}
+                                            {% elif key in cells and cells[key].type == 'goal' %}
                                                 goal
-
                                             {% else %}
                                                 free
                                             {% endif %}
                                         "
-
                                         data-x="{{ x }}"
                                         data-y="{{ y }}"
                                     >
 
+                                        {% if key in cells and cells[key].type == 'obstacle' %}
 
-                                        {% if key in cells
-                                            and cells[key].type == 'obstacle'
-                                        %}
+                                            <span>▦</span>
 
-                                            <span>
-                                                ▦
-                                            </span>
+                                        {% elif key in cells and cells[key].type == 'goal' %}
 
-
-                                        {% elif key in cells
-                                            and cells[key].type == 'goal'
-                                        %}
-
-                                            <span class="goal-icon">
-                                                🎯
-                                            </span>
-
+                                            <span class="goal-icon">🎯</span>
                                             <span class="cell-label">
                                                 G{{ cells[key].id }}
                                             </span>
 
                                         {% endif %}
 
-
                                     </div>
 
-
                                 {% endfor %}
-
                             {% endfor %}
 
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC OBSTACLE PANEL -->
+                    <div
+                        class="dashboard-card"
+                        id="dynamic-obstacle-panel"
+                    >
+
+                        <div class="dashboard-card-title">
+                            Dynamic Obstacle Response
+                        </div>
+
+                        <p>
+                            Pause the simulation, then select an empty
+                            grid cell to request safe replanning.
+                        </p>
+
+                        <div class="saved-actions">
+
+                            <button
+                                type="button"
+                                class="saved-action"
+                                id="enable-obstacle-mode"
+                            >
+                                Add Obstacle
+                            </button>
+
+                            <button
+                                type="button"
+                                class="saved-action"
+                                id="cancel-obstacle-mode"
+                                disabled
+                            >
+                                Cancel
+                            </button>
 
                         </div>
 
+                        <p
+                            id="obstacle-status"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            Pause the simulation before adding an obstacle.
+                        </p>
+
                     </div>
 
-
-
-                    <!-- =================================================
-                         LEGEND
-                         ================================================= -->
-
+                    <!-- LEGEND -->
                     <div class="warehouse-legend">
 
-
                         <div class="legend-item">
-
-                            <span
-                                class="
-                                    legend-symbol
-                                    legend-robot
-                                "
-                            ></span>
-
+                            <span class="legend-symbol legend-robot"></span>
                             Robot
-
                         </div>
 
-
                         <div class="legend-item">
-
-                            <span
-                                class="
-                                    legend-symbol
-                                    legend-goal
-                                "
-                            ></span>
-
+                            <span class="legend-symbol legend-goal"></span>
                             Goal
-
                         </div>
 
-
                         <div class="legend-item">
-
-                            <span
-                                class="
-                                    legend-symbol
-                                    legend-obstacle
-                                "
-                            ></span>
-
+                            <span class="legend-symbol legend-obstacle"></span>
                             Obstacle
-
                         </div>
-
 
                         <div class="legend-item">
-
-                            <span
-                                class="legend-path"
-                            ></span>
-
+                            <span class="legend-path"></span>
                             Planned Path
-
                         </div>
-
 
                     </div>
-
 
                 </section>
 
-
-
-                <!-- =================================================
-                     RIGHT DASHBOARD
-                     ================================================= -->
-
+                <!-- RIGHT DASHBOARD -->
                 <aside class="dashboard-side">
 
-
-                    <!-- STATUS -->
-
+                    <!-- SIMULATION STATUS -->
                     <div class="dashboard-card">
 
                         <div class="dashboard-card-title">
                             Simulation Status
                         </div>
 
-
                         <div class="status-row">
-
                             <span class="status-dot"></span>
-
                             <div>
-
                                 <div class="status-text">
                                     Solution Found
                                 </div>
-
                                 <div class="status-subtext">
-                                    Collision-free CBS solution
+                                    CBS solution generated
                                 </div>
-
                             </div>
-
                         </div>
 
-
-                        <div
-                            style="margin-top: 13px;"
-                        >
+                        <div style="margin-top: 13px;">
 
                             <div class="progress-bar">
-
                                 <div
                                     id="progress-fill"
                                     class="progress-fill"
                                 ></div>
-
                             </div>
 
-
                             <div class="progress-info">
-
-                                <span>
-                                    Simulation Progress
-                                </span>
-
-                                <span id="progress-percent">
-                                    0%
-                                </span>
-
+                                <span>Simulation Progress</span>
+                                <span id="progress-percent">0%</span>
                             </div>
 
                         </div>
 
-
                         <div class="time-display">
-
-                            <span>
-                                Time Step
-                            </span>
-
+                            <span>Time Step</span>
                             <strong>
-
-                                <span id="current-time">
-                                    0
-                                </span>
-
+                                <span id="current-time">0</span>
                                 /
-
-                                <span id="max-time">
-                                    {{ makespan }}
-                                </span>
-
+                                <span id="max-time">{{ makespan }}</span>
                             </strong>
-
                         </div>
 
                     </div>
 
-
-
-                    <!-- =================================================
-                         METRICS
-                         ================================================= -->
-
+                    <!-- CBS METRICS -->
                     <div class="dashboard-card">
 
                         <div class="dashboard-card-title">
                             CBS Metrics
                         </div>
 
-
                         <div class="metrics-grid">
 
-
                             <div class="metric-card">
-
-                                <div class="metric-label">
-                                    PATH COST
-                                </div>
-
-                                <div class="metric-value">
+                                <div class="metric-label">PATH COST</div>
+                                <div class="metric-value" id="metric-cost">
                                     {{ total_cost }}
                                 </div>
-
                             </div>
 
-
                             <div class="metric-card">
-
-                                <div class="metric-label">
-                                    MAKESPAN
-                                </div>
-
-                                <div class="metric-value">
+                                <div class="metric-label">MAKESPAN</div>
+                                <div class="metric-value" id="metric-makespan">
                                     {{ makespan }}
                                 </div>
-
                             </div>
 
-
                             <div class="metric-card">
-
-                                <div class="metric-label">
-                                    CONFLICTS
-                                </div>
-
-                                <div class="metric-value">
+                                <div class="metric-label">CONFLICTS</div>
+                                <div class="metric-value" id="metric-conflicts">
                                     {{ conflicts }}
                                 </div>
-
                             </div>
-
 
                             <div class="metric-card">
-
-                                <div class="metric-label">
-                                    NODES
-                                </div>
-
-                                <div class="metric-value">
+                                <div class="metric-label">NODES</div>
+                                <div class="metric-value" id="metric-nodes">
                                     {{ nodes }}
                                 </div>
-
                             </div>
-
 
                         </div>
 
                     </div>
 
-
-
-                    <!-- =================================================
-                         CONTROLS
-                         ================================================= -->
-
+                    <!-- SIMULATION CONTROLS -->
                     <div class="dashboard-card">
 
                         <div class="dashboard-card-title">
                             Simulation Controls
                         </div>
 
-
                         <div class="simulation-controls">
 
-
                             <button
+                                type="button"
                                 id="play-button"
-                                class="
-                                    simulation-control
-                                    play
-                                "
+                                class="simulation-control play"
                             >
                                 ▶ Play
                             </button>
 
-
                             <button
+                                type="button"
                                 id="pause-button"
                                 class="simulation-control"
                             >
                                 ⏸ Pause
                             </button>
 
-
                             <button
+                                type="button"
                                 id="restart-button"
                                 class="simulation-control"
                             >
                                 ↻ Restart
                             </button>
 
-
                         </div>
 
                     </div>
 
-
-
-                    <!-- =================================================
-                         ACTIONS
-                         ================================================= -->
-
+                    <!-- SCENARIO ACTIONS -->
                     <div class="dashboard-card">
 
                         <div class="dashboard-card-title">
                             Scenario Actions
                         </div>
 
-
                         <div class="saved-actions">
-
 
                             <a
                                 href="/custom/edit"
-                                class="
-                                    saved-action
-                                    modify
-                                "
+                                class="saved-action modify"
                             >
                                 ✏️ Modify
                             </a>
 
-
                             <a
                                 href="/saved"
-                                class="
-                                    saved-action
-                                    run
-                                "
+                                class="saved-action run"
                             >
                                 ▶ Run Again
                             </a>
-
 
                         </div>
 
                     </div>
 
-
                 </aside>
 
-
             </div>
-
-
-
-            <!-- =================================================
-                 FOOTER ACTION
-                 ================================================= -->
 
             <div class="simulation-footer-actions">
-
                 <div class="simulation-footer-note">
-                    Custom scenario stored in dynamic.json
+                    Custom scenario stored in dynamic.json.
+                    Added obstacles are temporary.
                 </div>
 
-
-                <a
-                    href="/"
-                    class="back-button"
-                >
+                <a href="/" class="back-button">
                     ← Back to Home
                 </a>
-
             </div>
-
-
 
             {% else %}
 
-
-            <!-- =================================================
-                 NO SOLUTION
-                 ================================================= -->
-
+            <!-- NO SOLUTION -->
             <div class="state-card">
-
-                <h2>
-                    ❌ No Solution Found
-                </h2>
+                <h2>❌ No Solution Found</h2>
 
                 <p>
                     CBS could not find a collision-free
                     solution for your saved scenario.
                 </p>
 
-
                 <div class="saved-actions">
-
                     <a
                         href="/custom/edit"
-                        class="
-                            saved-action
-                            modify
-                        "
+                        class="saved-action modify"
                     >
                         ✏️ Modify Scenario
                     </a>
-
                 </div>
 
-
-                <br>
-
-
-                <a
-                    href="/"
-                    class="secondary-button"
-                >
-                    ← Back to Home
-                </a>
-
+                <p>
+                    <a href="/" class="secondary-button">
+                        ← Back to Home
+                    </a>
+                </p>
             </div>
-
 
             {% endif %}
 
-
-
         {% else %}
 
-
-        <!-- =================================================
-             NO SAVED SCENARIO
-             ================================================= -->
-
+        <!-- NO SAVED SCENARIO -->
         <div class="state-card">
 
-            <div style="font-size: 42px;">
-                📭
-            </div>
+            <div style="font-size: 42px;">📭</div>
 
-            <h2>
-                No Saved Scenario
-            </h2>
+            <h2>No Saved Scenario</h2>
 
             <p>
-                You haven't created a customized
-                warehouse yet.
+                You haven't created a customized warehouse yet.
             </p>
 
             <p>
-                Create a custom scenario first and
-                save it to use it here.
+                Create a custom scenario first and save it
+                to use it here.
             </p>
 
-
-            <br>
-
-
-            <a
-                href="/custom"
-                class="secondary-button"
-            >
+            <a href="/custom" class="secondary-button">
                 🛠️ Create Scenario
             </a>
 
-
-            <br>
-            <br>
-
-
-            <a
-                href="/"
-                class="secondary-button"
-            >
-                ← Back to Home
-            </a>
+            <p>
+                <a href="/" class="secondary-button">
+                    ← Back to Home
+                </a>
+            </p>
 
         </div>
 
-
         {% endif %}
 
-
     </div>
-
 </main>
 
-
-
 <footer>
-
-    <p>
-        Multi-Agent Warehouse Pathfinding System
-    </p>
-
+    <p>Multi-Agent Warehouse Pathfinding System</p>
 </footer>
-
 
 
 {% if scenario_exists and success %}
 
 <script>
 
-    /* =====================================================
-       ANIMATION DATA
-       ===================================================== */
+    // =====================================================
+    // ANIMATION DATA
+    // =====================================================
 
-    const animationPaths =
-        {{ animation_paths | tojson }};
-
-
-    const maxTime =
-        {{ makespan }};
-
-
+    let animationPaths = {{ animation_paths | tojson }};
+    let maxTime = {{ makespan }};
     let currentTime = 0;
-
     let animationTimer = null;
-
-
-
-    /* =====================================================
-       FIND CELL
-       ===================================================== */
-
-    function getCell(x, y) {
-
-        return document.querySelector(
-            `.warehouse-cell[data-x="${x}"][data-y="${y}"]`
-        );
-
-    }
-
-
-
-    /* =====================================================
-       CLEAR ROBOTS
-       ===================================================== */
-
-    function clearRobots() {
-
-        document
-            .querySelectorAll(".animated-robot")
-            .forEach(
-                robot => robot.remove()
-            );
-
-    }
-
-
-
-    /* =====================================================
-       ROBOT COLORS
-       ===================================================== */
 
     const robotColors = [
         "#22c55e",
@@ -1663,442 +973,520 @@
     ];
 
 
+    // =====================================================
+    // FIND WAREHOUSE CELL
+    // =====================================================
 
-    /* =====================================================
-       DRAW ROBOTS
-       ===================================================== */
-
-    function drawRobots(time) {
-
-        clearRobots();
-
-
-        Object.entries(animationPaths)
-            .forEach(
-                ([robotId, path], index) => {
-
-
-                    if (!path || path.length === 0) {
-                        return;
-                    }
-
-
-                    const pathIndex =
-                        Math.min(
-                            time,
-                            path.length - 1
-                        );
-
-
-                    const position =
-                        path[pathIndex];
-
-
-                    const x =
-                        position[0];
-
-
-                    const y =
-                        position[1];
-
-
-                    const cell =
-                        getCell(x, y);
-
-
-                    if (!cell) {
-                        return;
-                    }
-
-
-                    const robot =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    robot.className =
-                        "animated-robot";
-
-
-                    robot.style.background =
-                        robotColors[
-                            index % robotColors.length
-                        ];
-
-
-                    robot.innerHTML = `
-
-                        <span
-                            class="animated-robot-icon"
-                        >
-                            🤖
-                        </span>
-
-                        <span
-                            class="animated-robot-label"
-                        >
-                            R${robotId}
-                        </span>
-
-                    `;
-
-
-                    cell.appendChild(
-                        robot
-                    );
-
-                }
-            );
-
-
-        document.getElementById(
-            "current-time"
-        ).textContent = time;
-
-
-        updateProgress(time);
-
+    function getCell(x, y) {
+        return document.querySelector(
+            `.warehouse-cell[data-x="${x}"][data-y="${y}"]`
+        );
     }
 
 
+    // =====================================================
+    // CLEAR ROBOTS
+    // =====================================================
 
-    /* =====================================================
-       UPDATE PROGRESS
-       ===================================================== */
+    function clearRobots() {
+        document
+            .querySelectorAll(".animated-robot")
+            .forEach(robot => robot.remove());
+    }
+
+
+    // =====================================================
+    // UPDATE PROGRESS
+    // =====================================================
 
     function updateProgress(time) {
+        const percent = maxTime === 0
+            ? 100
+            : Math.round((time / maxTime) * 100);
 
-        const percent =
-            maxTime === 0
-                ? 100
-                : Math.round(
-                    (time / maxTime) * 100
-                );
-
-
-        document.getElementById(
-            "progress-fill"
-        ).style.width =
+        document.getElementById("progress-fill").style.width =
             `${percent}%`;
 
-
-        document.getElementById(
-            "progress-percent"
-        ).textContent =
+        document.getElementById("progress-percent").textContent =
             `${percent}%`;
-
     }
 
 
+    // =====================================================
+    // DRAW ROBOTS
+    // =====================================================
 
-    /* =====================================================
-       DRAW CBS PLANNED PATHS
-       ===================================================== */
+    function drawRobots(time) {
+        clearRobots();
+
+        Object.entries(animationPaths).forEach(
+            ([robotId, path], index) => {
+
+                if (!Array.isArray(path) || path.length === 0) {
+                    return;
+                }
+
+                const pathIndex = Math.min(time, path.length - 1);
+                const position = path[pathIndex];
+
+                const x = position[0];
+                const y = position[1];
+
+                const cell = getCell(x, y);
+
+                if (!cell) {
+                    return;
+                }
+
+                const robot = document.createElement("div");
+
+                robot.className = "animated-robot";
+
+                robot.style.background =
+                    robotColors[index % robotColors.length];
+
+                const icon = document.createElement("span");
+                icon.className = "animated-robot-icon";
+                icon.textContent = "🤖";
+
+                const label = document.createElement("span");
+                label.className = "animated-robot-label";
+                label.textContent = `R${robotId}`;
+
+                robot.appendChild(icon);
+                robot.appendChild(label);
+                cell.appendChild(robot);
+            }
+        );
+
+        document.getElementById("current-time").textContent = time;
+
+        updateProgress(time);
+    }
+
+
+    // =====================================================
+    // DRAW PLANNED PATHS
+    // =====================================================
 
     function drawPaths() {
-
-        const svg =
-            document.getElementById(
-                "path-overlay"
-            );
-
+        const svg = document.getElementById("path-overlay");
 
         if (!svg) {
             return;
         }
 
+        svg.replaceChildren();
 
-        svg.innerHTML = "";
-
-
-        const grid =
-            document.getElementById(
-                "warehouse-grid"
-            );
-
-
-        const gridRect =
-            grid.getBoundingClientRect();
-
+        const grid = document.getElementById("warehouse-grid");
+        const gridRect = grid.getBoundingClientRect();
 
         svg.setAttribute(
             "viewBox",
             `0 0 ${gridRect.width} ${gridRect.height}`
         );
 
+        Object.entries(animationPaths).forEach(
+            ([robotId, path], index) => {
 
-        Object.entries(animationPaths)
-            .forEach(
-                ([robotId, path], index) => {
-
-
-                    if (
-                        !path ||
-                        path.length < 2
-                    ) {
-                        return;
-                    }
-
-
-                    const points = [];
-
-
-                    path.forEach(
-                        position => {
-
-                            const x =
-                                position[0];
-
-
-                            const y =
-                                position[1];
-
-
-                            const cell =
-                                getCell(x, y);
-
-
-                            if (!cell) {
-                                return;
-                            }
-
-
-                            const rect =
-                                cell.getBoundingClientRect();
-
-
-                            points.push({
-
-                                x:
-                                    rect.left
-                                    - gridRect.left
-                                    + rect.width / 2,
-
-                                y:
-                                    rect.top
-                                    - gridRect.top
-                                    + rect.height / 2
-
-                            });
-
-                        }
-                    );
-
-
-                    if (
-                        points.length < 2
-                    ) {
-                        return;
-                    }
-
-
-                    const polyline =
-                        document.createElementNS(
-                            "http://www.w3.org/2000/svg",
-                            "polyline"
-                        );
-
-
-                    polyline.setAttribute(
-                        "points",
-                        points
-                            .map(
-                                point =>
-                                    `${point.x},${point.y}`
-                            )
-                            .join(" ")
-                    );
-
-
-                    polyline.setAttribute(
-                        "class",
-                        "robot-path-line"
-                    );
-
-
-                    polyline.style.stroke =
-                        robotColors[
-                            index %
-                            robotColors.length
-                        ];
-
-
-                    svg.appendChild(
-                        polyline
-                    );
-
+                if (!Array.isArray(path) || path.length < 2) {
+                    return;
                 }
-            );
 
+                const points = [];
+
+                path.forEach(position => {
+                    const x = position[0];
+                    const y = position[1];
+
+                    const cell = getCell(x, y);
+
+                    if (!cell) {
+                        return;
+                    }
+
+                    const rect = cell.getBoundingClientRect();
+
+                    points.push({
+                        x: rect.left - gridRect.left + rect.width / 2,
+                        y: rect.top - gridRect.top + rect.height / 2
+                    });
+                });
+
+                if (points.length < 2) {
+                    return;
+                }
+
+                const polyline = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "polyline"
+                );
+
+                polyline.setAttribute(
+                    "points",
+                    points.map(point => `${point.x},${point.y}`).join(" ")
+                );
+
+                polyline.setAttribute("class", "robot-path-line");
+
+                polyline.style.stroke =
+                    robotColors[index % robotColors.length];
+
+                svg.appendChild(polyline);
+            }
+        );
     }
 
 
-
-    /* =====================================================
-       PLAY
-       ===================================================== */
+    // =====================================================
+    // PLAY ANIMATION
+    // =====================================================
 
     function playAnimation() {
+        if (animationTimer !== null || obstacleRequestInProgress) {
+            return;
+        }
 
-        if (
-            animationTimer !== null
-        ) {
+        if (obstacleSelectionEnabled) {
+            obstacleStatus.textContent =
+                "Cancel obstacle selection before playing.";
+            return;
+        }
+
+        if (currentTime >= maxTime) {
+            currentTime = 0;
+            drawRobots(currentTime);
+        }
+
+        animationTimer = setInterval(() => {
+
+            if (currentTime >= maxTime) {
+                pauseAnimation();
+                return;
+            }
+
+            currentTime++;
+            drawRobots(currentTime);
+
+        }, 600);
+    }
+
+
+    // =====================================================
+    // PAUSE ANIMATION
+    // =====================================================
+
+    function pauseAnimation() {
+        if (animationTimer !== null) {
+            clearInterval(animationTimer);
+            animationTimer = null;
+        }
+    }
+
+
+    // =====================================================
+    // RESTART ANIMATION
+    // =====================================================
+
+    function restartAnimation() {
+        if (obstacleRequestInProgress) {
+            return;
+        }
+
+        pauseAnimation();
+
+        if (obstacleSelectionEnabled) {
+            setObstacleSelection(
+                false,
+                "Selection cancelled."
+            );
+        }
+
+        currentTime = 0;
+        drawRobots(currentTime);
+    }
+
+
+    // =====================================================
+    // SIMULATION BUTTON EVENTS
+    // =====================================================
+
+    document
+        .getElementById("play-button")
+        .addEventListener("click", playAnimation);
+
+    document
+        .getElementById("pause-button")
+        .addEventListener("click", pauseAnimation);
+
+    document
+        .getElementById("restart-button")
+        .addEventListener("click", restartAnimation);
+
+
+    // =====================================================
+    // DYNAMIC OBSTACLE RESPONSE
+    // =====================================================
+
+    let obstacleSelectionEnabled = false;
+    let obstacleRequestInProgress = false;
+    let activeTemporaryObstacles = [];
+
+    const obstacleStatus =
+        document.getElementById("obstacle-status");
+
+    const enableObstacleButton =
+        document.getElementById("enable-obstacle-mode");
+
+    const cancelObstacleButton =
+        document.getElementById("cancel-obstacle-mode");
+
+    const warehouseGrid =
+        document.getElementById("warehouse-grid");
+
+
+    // =====================================================
+    // OBSTACLE SELECTION STATE
+    // =====================================================
+
+    function setObstacleSelection(enabled, message = "") {
+        obstacleSelectionEnabled = enabled;
+
+        enableObstacleButton.disabled =
+            enabled || obstacleRequestInProgress;
+
+        cancelObstacleButton.disabled =
+            !enabled || obstacleRequestInProgress;
+
+        if (message) {
+            obstacleStatus.textContent = message;
+        }
+    }
+
+
+    // =====================================================
+    // ENABLE OBSTACLE SELECTION
+    // =====================================================
+
+    enableObstacleButton.addEventListener("click", () => {
+
+        if (animationTimer !== null) {
+            obstacleStatus.textContent =
+                "Pause the simulation before adding an obstacle.";
+            return;
+        }
+
+        if (obstacleRequestInProgress) {
+            return;
+        }
+
+        setObstacleSelection(
+            true,
+            "Select an empty cell to request replanning."
+        );
+    });
+
+
+    // =====================================================
+    // CANCEL OBSTACLE SELECTION
+    // =====================================================
+
+    cancelObstacleButton.addEventListener("click", () => {
+
+        setObstacleSelection(
+            false,
+            "Selection cancelled. No changes were made."
+        );
+    });
+
+
+    // =====================================================
+    // HANDLE WAREHOUSE GRID CLICK
+    // =====================================================
+
+    warehouseGrid.addEventListener("click", async (event) => {
+
+        if (!obstacleSelectionEnabled) {
+            return;
+        }
+
+        if (animationTimer !== null) {
+            setObstacleSelection(
+                false,
+                "Pause the simulation before adding an obstacle."
+            );
+            return;
+        }
+
+        const cell = event.target.closest(".warehouse-cell");
+
+        if (!cell || !warehouseGrid.contains(cell)) {
+            return;
+        }
+
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+
+
+        // Reject existing obstacles.
+        if (cell.classList.contains("obstacle")) {
+            obstacleStatus.textContent =
+                `Cell (${x}, ${y}) already contains an obstacle.`;
             return;
         }
 
 
+        // Reject goals and current robot positions.
         if (
-            currentTime >= maxTime
+            cell.classList.contains("goal") ||
+            cell.querySelector(".animated-robot")
         ) {
-
-            currentTime = 0;
-
-            drawRobots(
-                currentTime
-            );
-
+            obstacleStatus.textContent =
+                `Cell (${x}, ${y}) is occupied by a goal or robot.`;
+            return;
         }
 
 
-        animationTimer =
-            setInterval(
-                () => {
+        // Prevent additional selections during replanning.
+        obstacleSelectionEnabled = false;
+        obstacleRequestInProgress = true;
+
+        enableObstacleButton.disabled = true;
+        cancelObstacleButton.disabled = true;
+
+        obstacleStatus.textContent =
+            `Calculating new paths for obstacle (${x}, ${y})...`;
 
 
-                    if (
-                        currentTime >= maxTime
-                    ) {
+        try {
 
-                        clearInterval(
-                            animationTimer
-                        );
-
-                        animationTimer = null;
-
-                        return;
-
-                    }
-
-
-                    currentTime++;
-
-
-                    drawRobots(
-                        currentTime
-                    );
-
-
+            // Send obstacle request to Flask.
+            const response = await fetch("/dynamic-obstacle", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
                 },
-                600
-            );
+                body: JSON.stringify({
+    x: x,
+    y: y,
+    currentTime: currentTime,
+    animationPaths: animationPaths,
 
-    }
-
-
-
-    /* =====================================================
-       PAUSE
-       ===================================================== */
-
-    function pauseAnimation() {
-
-        if (
-            animationTimer !== null
-        ) {
-
-            clearInterval(
-                animationTimer
-            );
-
-            animationTimer = null;
-
-        }
-
-    }
+    // Send previous obstacles and the newly selected obstacle.
+    activeObstacles: [
+        ...activeTemporaryObstacles,
+        { x: x, y: y }
+    ]
+})
+            });
 
 
-
-    /* =====================================================
-       RESTART
-       ===================================================== */
-
-    function restartAnimation() {
-
-        pauseAnimation();
+            // Read the server response.
+            const result = await response.json();
 
 
-        currentTime = 0;
+            // Check whether replanning succeeded.
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || "Replanning failed."
+                );
+            }
 
 
-        drawRobots(
-            currentTime
-        );
-
-    }
+            // Validate returned path data.
+            if (
+                !result.animationPaths ||
+                typeof result.animationPaths !== "object" ||
+                !Number.isInteger(result.maxTime) ||
+                result.maxTime < currentTime
+            ) {
+                throw new Error(
+                    "The server returned invalid replanning data."
+                );
+            }
 
 
 
-    /* =====================================================
-       BUTTON EVENTS
-       ===================================================== */
+            // Apply new paths only after successful replanning.
+animationPaths = result.animationPaths;
+maxTime = result.maxTime;
 
-    document
-        .getElementById("play-button")
-        .addEventListener(
-            "click",
-            playAnimation
-        );
+// Store the complete obstacle list returned by Flask.
+activeTemporaryObstacles = Array.isArray(result.activeObstacles)
+    ? result.activeObstacles.map(obstacle => ({
+        x: obstacle.x,
+        y: obstacle.y
+    }))
+    : [
+        ...activeTemporaryObstacles,
+        { x: x, y: y }
+    ];
 
+            // Update the makespan display.
+            document.getElementById("max-time").textContent =
+                maxTime;
 
-    document
-        .getElementById("pause-button")
-        .addEventListener(
-            "click",
-            pauseAnimation
-        );
-
-
-    document
-        .getElementById("restart-button")
-        .addEventListener(
-            "click",
-            restartAnimation
-        );
+            document.getElementById("metric-makespan").textContent =
+                maxTime;
 
 
+            // Mark selected cell as a temporary obstacle.
+           cell.classList.remove("free");
+cell.classList.add("obstacle", "temporary-obstacle");
 
-    /* =====================================================
-       INITIALIZE
-       ===================================================== */
+            const obstacleIcon = document.createElement("span");
+            obstacleIcon.textContent = "▦";
 
-    window.addEventListener(
-        "load",
-        () => {
+            cell.replaceChildren(obstacleIcon);
 
+
+            // Redraw paths and robot positions.
             drawPaths();
+            drawRobots(currentTime);
 
-            drawRobots(0);
 
+            // Report successful replanning.
+            obstacleStatus.textContent =
+                `${result.message || "Replanning completed."} ` +
+                "Simulation remains paused.";
+
+        } catch (error) {
+
+            // Keep old paths and grid unchanged on failure.
+            obstacleStatus.textContent =
+                `Obstacle not applied: ${error.message}`;
+
+        } finally {
+
+            obstacleRequestInProgress = false;
+
+            enableObstacleButton.disabled = false;
+            cancelObstacleButton.disabled = true;
         }
-    );
+    });
 
 
-    window.addEventListener(
-        "resize",
-        () => {
+    // =====================================================
+    // INITIALIZE SIMULATION
+    // =====================================================
 
-            drawPaths();
+    window.addEventListener("load", () => {
+        drawPaths();
+        drawRobots(0);
+    });
 
-        }
-    );
+
+    // =====================================================
+    // HANDLE WINDOW RESIZE
+    // =====================================================
+
+    window.addEventListener("resize", () => {
+        drawPaths();
+    });
 
 </script>
 
 {% endif %}
 
-
-
 </body>
-
 </html>
