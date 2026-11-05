@@ -10,6 +10,7 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 
 <body>
@@ -33,8 +34,13 @@
 
         </div>
 
-        <div class="cbs-badge">
-            CBS
+        <div class="header-actions">
+            <button class="theme-toggle" type="button" aria-label="Switch to light theme">
+                ☀ Light
+            </button>
+            <div class="cbs-badge">
+                CBS
+            </div>
         </div>
 
     </div>
@@ -54,30 +60,6 @@
 
 
         <div class="home-grid">
-
-            <!-- PREDEFINED SCENARIO -->
-
-            <a href="/predefined" class="option-card">
-
-                <div class="option-icon">
-                    📦
-                </div>
-
-                <h3>
-                    Predefined Scenario
-                </h3>
-
-                <p>
-                    Explore and run the built-in warehouse scenario
-                    with predefined robots, obstacles and goals.
-                </p>
-
-                <div class="option-arrow">
-                    View &amp; Run →
-                </div>
-
-            </a>
-
 
             <!-- SAVED SCENARIO -->
 

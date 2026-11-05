@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 from pathlib import Path
@@ -20,6 +21,14 @@ from agents.dynamic_obstacle_agent import DynamicObstacleAgent
 
 app = Flask(__name__)
 dynamic_obstacle_agent = DynamicObstacleAgent()
+
+
+def _debug_enabled():
+    return os.environ.get("FLASK_DEBUG", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
 
 # =========================================================
@@ -81,7 +90,9 @@ def run_scenario(scenario_file):
         ),
         "planning_time": result.planning_time,
         "conflicts": result.conflicts_detected,
-        "nodes": result.nodes_expanded
+        "nodes": result.nodes_expanded,
+        "timed_out": result.timed_out,
+        "failure_reason": result.failure_reason,
     }
 
 
@@ -92,14 +103,6 @@ def run_scenario(scenario_file):
 @app.route("/")
 def home():
     return render_template("index.html")
-
-
-@app.route("/predefined")
-def predefined():
-    return render_template(
-        "predefined.html",
-        **run_scenario("simple.json")
-    )
 
 
 @app.route("/saved")
@@ -582,12 +585,22 @@ def dynamic_obstacle():
         )
 
         if not result.success:
-            return jsonify({
-                "success": False,
-                "message": (
+            if result.failure_reason == "time_limit":
+                message = "CBS reached its time limit while replanning."
+            elif result.failure_reason == "node_limit":
+                message = "CBS reached its node limit while replanning."
+            else:
+                message = (
                     "CBS could not find a safe plan around all "
                     "active obstacles."
                 )
+
+            return jsonify({
+                "success": False,
+                "message": message,
+                "failureReason": result.failure_reason,
+                "timedOut": result.timed_out,
+                "nodes": result.nodes_expanded,
             }), 409
 
         # -------------------------------------------------
@@ -750,4 +763,4 @@ def dynamic_obstacle():
 # =========================================================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=_debug_enabled())

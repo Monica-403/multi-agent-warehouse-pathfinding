@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Saved Scenario</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 
     <style>
         .simulation-page {
@@ -544,7 +545,12 @@
                 </p>
             </div>
         </div>
-        <div class="cbs-badge">CBS</div>
+        <div class="header-actions">
+            <button class="theme-toggle" type="button" aria-label="Switch to light theme">
+                ☀ Light
+            </button>
+            <div class="cbs-badge">CBS</div>
+        </div>
     </div>
 </header>
 
@@ -886,8 +892,21 @@
                 <h2>❌ No Solution Found</h2>
 
                 <p>
-                    CBS could not find a collision-free
-                    solution for your saved scenario.
+                    {% if failure_reason == "time_limit" %}
+                        CBS reached its 30-second search time limit before
+                        finding a collision-free solution. Try a smaller
+                        warehouse or fewer robots.
+                    {% elif failure_reason == "node_limit" %}
+                        CBS reached its 50,000-node search limit before
+                        finding a collision-free solution. Try a smaller
+                        warehouse or fewer robots.
+                    {% elif failure_reason == "no_path" %}
+                        At least one robot has no path to its goal. Check that
+                        the goal is reachable and not blocked.
+                    {% else %}
+                        CBS could not find a collision-free solution for your
+                        saved scenario.
+                    {% endif %}
                 </p>
 
                 <div class="saved-actions">
