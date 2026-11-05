@@ -8,7 +8,7 @@ import heapq
 import itertools
 import time as time_module
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from environment.grid import Grid
 from environment.robot import Robot
@@ -39,6 +39,7 @@ class CBSResult:
     conflicts_resolved: int
     nodes_expanded: int
     timed_out: bool = False
+    failure_reason: Optional[str] = None
 
 
 def cbs_search(
@@ -49,10 +50,8 @@ def cbs_search(
     time_limit_seconds: float = 30.0,
 ) -> CBSResult:
     """
-    time_limit_seconds: wall-clock cap on the whole search, independent of
-    node_limit. Whichever limit is hit first stops the search and returns
-    success=False, timed_out=True (if it was the time cap that triggered it).
-    This keeps large instances (e.g. 30 robots) from running indefinitely.
+    The wall-clock limit is checked after each low-level root plan and between
+    high-level node expansions. The node limit caps expanded high-level nodes.
     """
     start_time = time_module.time()
     conflicts_detected = 0
@@ -62,8 +61,17 @@ def cbs_search(
     root_paths = {}
     for robot in robots:
         path = space_time_astar(grid, robot.id, robot.start, robot.goal, root_constraints, max_time)
+        elapsed = time_module.time() - start_time
+        if elapsed >= time_limit_seconds:
+            return CBSResult(
+                False, {}, elapsed, conflicts_detected, conflicts_detected,
+                nodes_expanded, timed_out=True, failure_reason="time_limit",
+            )
         if path is None:
-            return CBSResult(False, {}, time_module.time() - start_time, 0, 0, 0)
+            return CBSResult(
+                False, {}, time_module.time() - start_time, 0, 0, 0,
+                failure_reason="no_path",
+            )
         root_paths[robot.id] = path
 
     root = CBSNode(constraints=root_constraints, paths=root_paths)
@@ -75,14 +83,20 @@ def cbs_search(
 
     while open_list:
         elapsed = time_module.time() - start_time
-        if elapsed > time_limit_seconds:
-            return CBSResult(False, {}, elapsed, conflicts_detected,
-                              conflicts_detected, nodes_expanded, timed_out=True)
+        if elapsed >= time_limit_seconds:
+            return CBSResult(
+                False, {}, elapsed, conflicts_detected, conflicts_detected,
+                nodes_expanded, timed_out=True, failure_reason="time_limit",
+            )
+
+        if nodes_expanded >= node_limit:
+            return CBSResult(
+                False, {}, time_module.time() - start_time,
+                conflicts_detected, conflicts_detected, nodes_expanded,
+                failure_reason="node_limit",
+            )
 
         nodes_expanded += 1
-        if nodes_expanded > node_limit:
-            return CBSResult(False, {}, time_module.time() - start_time,
-                              conflicts_detected, conflicts_detected, nodes_expanded)
 
         _, _, node = heapq.heappop(open_list)
 
@@ -128,5 +142,8 @@ def cbs_search(
             child_node.compute_cost()
             heapq.heappush(open_list, (child_node.cost, next(counter), child_node))
 
-    return CBSResult(False, {}, time_module.time() - start_time,
-                      conflicts_detected, conflicts_detected, nodes_expanded)
+    return CBSResult(
+        False, {}, time_module.time() - start_time,
+        conflicts_detected, conflicts_detected, nodes_expanded,
+        failure_reason="no_solution",
+    )

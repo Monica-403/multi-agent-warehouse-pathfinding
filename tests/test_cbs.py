@@ -77,6 +77,29 @@ def test_unreachable_goal_fails_gracefully():
     robots = [Robot(id=1, start=(0, 0), goal=(2, 0))]
     result = cbs_search(grid, robots)
     assert result.success is False
+    assert result.failure_reason == "no_path"
+
+
+def test_cbs_reports_node_limit_without_exceeding_it():
+    grid = Grid([[0, 0, 0]])
+    robots = [Robot(id=1, start=(0, 0), goal=(2, 0))]
+
+    result = cbs_search(grid, robots, node_limit=0)
+
+    assert result.success is False
+    assert result.failure_reason == "node_limit"
+    assert result.nodes_expanded == 0
+
+
+def test_cbs_reports_time_limit():
+    grid = Grid([[0, 0, 0]])
+    robots = [Robot(id=1, start=(0, 0), goal=(2, 0))]
+
+    result = cbs_search(grid, robots, time_limit_seconds=0)
+
+    assert result.success is False
+    assert result.timed_out is True
+    assert result.failure_reason == "time_limit"
 
 
 def test_multi_robot_intersection_solves_without_collision():
